@@ -1,0 +1,13 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+.git/
+tests/
+models/
+*.md
+mockup.html
+dist/
+*.egg-info/
+.venv/
+build/
