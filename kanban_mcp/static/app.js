@@ -1368,6 +1368,10 @@ async function createProject() {
 // --- Drag and Drop (wrapper for tested module) ---
 // The drag-drop logic is in /static/dragdrop.js - we wrap it here to provide showToast
 async function handleDropWrapper(e) {
+    // Initialize statuses from DOM on first drop
+    if (availableStatuses.length === 0) {
+        initializeStatuses();
+    }
     const result = await handleDrop(e, showToast, fetch);
     if (result.success && !result.noChange) {
         // Reload after brief delay to sync fully

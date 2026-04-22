@@ -324,6 +324,41 @@ def api_create_update():
     return jsonify({'success': True, 'update_id': update_id}), 201
 
 
+# --- Project API Routes ---
+
+@app.route('/api/projects', methods=['POST'])
+def api_create_project():
+    """Create a new project."""
+    import tempfile
+    import uuid
+    
+    data = request.get_json() or {}
+    name = data.get('name', '').strip()
+    
+    if not name:
+        return jsonify({
+            'success': False,
+            'error': 'Project name is required',
+        }), 400
+    
+    # Create a temporary directory for the project
+    temp_dir = tempfile.gettempdir()
+    project_dir = os.path.join(temp_dir, f'kanban-project-{uuid.uuid4().hex[:8]}')
+    os.makedirs(project_dir, exist_ok=True)
+    
+    try:
+        project_id = db.ensure_project(project_dir, name)
+        return jsonify({
+            'success': True,
+            'project_id': project_id,
+        }), 201
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+        }), 500
+
+
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
 def api_delete_project(project_id):
     """Delete a project and all its data."""
@@ -702,7 +737,11 @@ def api_get_project_timeline(project_id):
     return jsonify(result)
 
 
-STATUSES = ['backlog', 'todo', 'in_progress', 'review', 'done', 'closed']
+def get_statuses():
+    """Fetch status names from database (in correct order by ID)."""
+    with db._db_cursor(dictionary=True) as cursor:
+        cursor.execute("SELECT name FROM statuses ORDER BY id")
+        return [row['name'] for row in cursor.fetchall()]
 
 
 def get_all_relationships(project_id):
@@ -885,7 +924,7 @@ def index():
         projects=projects,
         current_project=current_project,
         current_project_dir=current_project_dir,
-        statuses=STATUSES,
+        statuses=get_statuses(),
         items_by_status=items_by_status,
         relationships=relationships,
         epic_progress=epic_progress

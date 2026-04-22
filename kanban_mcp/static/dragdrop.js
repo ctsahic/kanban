@@ -3,25 +3,28 @@
  * Extracted for testability
  */
 
-// Valid statuses per item type (matching kanban_mcp.py workflows)
-const TYPE_STATUSES = {
-    'issue': ['backlog', 'todo', 'in_progress', 'review', 'done', 'closed'],
-    'feature': ['backlog', 'todo', 'in_progress', 'review', 'done', 'closed'],
-    'epic': ['backlog', 'todo', 'in_progress', 'review', 'done', 'closed'],
-    'todo': ['backlog', 'todo', 'in_progress', 'done'],
-    'diary': ['done'],
-    'question': ['backlog', 'review', 'closed']
-};
-
 // State
 let draggedCard = null;
+let availableStatuses = []; // Will be populated from HTML
 
 /**
- * Check if a status is valid for an item type
+ * Initialize available statuses from the page
  */
-function isValidStatusForType(itemType, status) {
-    const validStatuses = TYPE_STATUSES[itemType] || [];
-    return validStatuses.includes(status);
+function initializeStatuses() {
+    availableStatuses = Array.from(document.querySelectorAll('[data-status]'))
+        .map(el => el.dataset.status)
+        .filter((status, index, self) => self.indexOf(status) === index && status); // unique non-empty
+}
+
+/**
+ * Check if a status is valid (exists in the system)
+ * We rely on backend validation for type-specific rules
+ */
+function isValidStatus(status) {
+    if (availableStatuses.length === 0) {
+        initializeStatuses();
+    }
+    return availableStatuses.includes(status);
 }
 
 /**
@@ -75,10 +78,9 @@ function handleDragOver(e) {
     }
 
     const dropTarget = e.currentTarget;
-    const itemType = draggedCard.dataset.itemType;
     const targetStatus = dropTarget.dataset.status;
 
-    if (isValidStatusForType(itemType, targetStatus)) {
+    if (isValidStatus(targetStatus)) {
         e.dataTransfer.dropEffect = 'move';
         dropTarget.classList.add('drag-over');
     } else {
@@ -122,9 +124,9 @@ async function handleDrop(e, showToast, fetchFn = fetch) {
         return { success: true, noChange: true };
     }
 
-    // Validate status is allowed for item type
-    if (!isValidStatusForType(itemType, newStatus)) {
-        const error = `Status '${newStatus}' not valid for ${itemType}`;
+    // Validate status exists in system (backend will validate type-specific rules)
+    if (!isValidStatus(newStatus)) {
+        const error = `Status '${newStatus}' not found`;
         if (showToast) showToast(error, 'error');
         return { success: false, error };
     }
@@ -172,8 +174,8 @@ function resetDragState() {
 // Export for testing (CommonJS for Jest compatibility)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-        TYPE_STATUSES,
-        isValidStatusForType,
+        isValidStatus,
+        initializeStatuses,
         canDrag,
         handleDragStart,
         handleDragEnd,
