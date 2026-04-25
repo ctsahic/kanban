@@ -1267,13 +1267,15 @@ async function saveItem() {
     const itemId = document.getElementById('edit-id').value;
     const complexityVal = document.getElementById('edit-complexity').value;
     const parentVal = document.getElementById('edit-parent').value;
+    const decisionChoiceVal = document.getElementById('add-decision-choice').value.trim();
     const data = {
         title: document.getElementById('edit-title').value,
         description: document.getElementById('edit-description').value,
         priority: parseInt(document.getElementById('edit-priority').value),
         complexity: complexityVal ? parseInt(complexityVal) : null,
         status: document.getElementById('edit-status').value,
-        parent_id: parentVal ? parseInt(parentVal) : null
+        parent_id: parentVal ? parseInt(parentVal) : null,
+        decision_choice: decisionChoiceVal || null
     };
 
     try {
@@ -1287,6 +1289,8 @@ async function saveItem() {
         if (!res.ok || !result.success) {
             throw new Error(result.message || result.error || 'Failed to save');
         }
+
+        document.getElementById('add-decision-choice').value = '';
 
         closeModal('edit-modal');
         showToast('Item updated');

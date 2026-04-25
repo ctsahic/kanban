@@ -115,6 +115,25 @@ class TestKanbanWebAPI(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_api_edit_item_saves_decision_note(self):
+        """POST /api/items/<id> should persist decision note on main save."""
+        item = self.db.get_item(self.test_item_id)
+        response = self.client.post(
+            f'/api/items/{self.test_item_id}',
+            json={
+                'status': item['status_name'],
+                'decision_choice': 'Keep this candidate',
+            },
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data['success'])
+
+        decisions = self.db.get_item_decisions(self.test_item_id)
+        self.assertGreaterEqual(len(decisions), 1)
+        self.assertEqual(decisions[0]['choice'], 'Keep this candidate')
+
     def test_api_add_decision_saves_note(self):
         """POST /api/items/<id>/decisions should save a decision note."""
         response = self.client.post(

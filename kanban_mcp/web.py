@@ -109,6 +109,15 @@ def api_edit_item(item_id):
         return jsonify({'success': False, 'error': 'Item not found'}), 404
 
     data = request.get_json() or {}
+    decision_choice = data.get('decision_choice')
+    if isinstance(decision_choice, str):
+        decision_choice = decision_choice.strip() or None
+
+    status_for_decision = data.get('status') or item.get('status_name')
+    status_rationale = (
+        f"Status: {status_for_decision}"
+        if status_for_decision else None
+    )
 
     # Handle status change separately (uses set_status with blocking logic)
     status_result = None
@@ -128,7 +137,27 @@ def api_edit_item(item_id):
                 item_id,
                 status_result.get('new_status'),
                 source='edit_save',
+                choice_override=decision_choice,
+                rationale=status_rationale,
             )
+
+    # If status did not change, persist manual decision note (if provided)
+    status_changed = bool(
+        status_result
+        and status_result.get('new_status')
+        and status_result.get('new_status') != status_result.get('previous_status')
+    )
+    if decision_choice and not status_changed:
+        try:
+            result = db.add_decision(
+                item_id,
+                decision_choice,
+                rationale=status_rationale,
+            )
+            if not result.get('success'):
+                return jsonify(result), 400
+        except ValueError as e:
+            return jsonify({'success': False, 'error': str(e)}), 400
 
     # Handle other field updates
     update_fields = {}
