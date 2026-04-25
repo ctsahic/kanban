@@ -20,6 +20,42 @@ app = Flask(__name__)
 db = None
 
 
+def _record_status_decision(item_id,
+                            new_status,
+                            source='status_update',
+                            choice_override=None,
+                            rejected_alternatives=None,
+                            rationale=None):
+    """Best-effort decision log entry for status transitions."""
+    choice = (choice_override or f"Moved to status: {new_status}").strip()
+    if len(choice) > 200:
+        choice = choice[:200]
+
+    rejected = (
+        rejected_alternatives.strip()
+        if isinstance(rejected_alternatives, str)
+        else rejected_alternatives
+    )
+    if isinstance(rejected, str) and len(rejected) > 500:
+        rejected = rejected[:500]
+
+    reason = (
+        rationale.strip()
+        if isinstance(rationale, str)
+        else rationale
+    )
+    if not reason:
+        reason = f"Source: {source}"
+    if isinstance(reason, str) and len(reason) > 200:
+        reason = reason[:200]
+
+    try:
+        db.add_decision(item_id, choice, rejected, reason)
+    except Exception:
+        # Status changes should not fail if decision logging fails.
+        pass
+
+
 def _get_db():
     """Lazy-init the database connection."""
     global db
@@ -74,13 +110,24 @@ def api_edit_item(item_id):
     data = request.get_json() or {}
 
     # Handle status change separately (uses set_status with blocking logic)
+    status_result = None
     if 'status' in data:
         try:
-            result = db.set_status(item_id, data['status'])
-            if not result.get('success'):
-                return jsonify(result), 400
+            status_result = db.set_status(item_id, data['status'])
+            if not status_result.get('success'):
+                return jsonify(status_result), 400
         except ValueError as e:
             return jsonify({'success': False, 'error': str(e)}), 400
+
+        if (
+            status_result.get('new_status')
+            and status_result.get('new_status') != status_result.get('previous_status')
+        ):
+            _record_status_decision(
+                item_id,
+                status_result.get('new_status'),
+                source='edit_save',
+            )
 
     # Handle other field updates
     update_fields = {}
@@ -122,6 +169,10 @@ def api_set_status(item_id):
 
     data = request.get_json() or {}
     status = data.get('status')
+    decision_choice = data.get('decision_choice')
+    rejected_alternatives = data.get('rejected_alternatives')
+    rationale = data.get('rationale')
+    decision_source = data.get('decision_source', 'drag_drop')
     if not status:
         return jsonify({'success': False, 'error': 'Status required'}), 400
 
@@ -129,6 +180,20 @@ def api_set_status(item_id):
         result = db.set_status(item_id, status)
         if not result.get('success'):
             return jsonify(result), 400
+
+        if (
+            result.get('new_status')
+            and result.get('new_status') != result.get('previous_status')
+        ):
+            _record_status_decision(
+                item_id,
+                result.get('new_status'),
+                source=decision_source,
+                choice_override=decision_choice,
+                rejected_alternatives=rejected_alternatives,
+                rationale=rationale,
+            )
+
         return jsonify(result)
     except ValueError as e:
         return jsonify({'success': False, 'error': str(e)}), 400
@@ -920,6 +985,7 @@ def index():
             # Get tags for all items in one query
             item_ids = [item['id'] for item in items]
             item_tags = {}
+            item_decisions = {}
             if item_ids:
                 placeholders = ','.join(
                     [db._backend.placeholder] * len(item_ids))
@@ -939,8 +1005,40 @@ def index():
                         'color': row['color']
                     })
 
+                cursor.execute(f"""
+                    SELECT d.item_id, d.choice, d.created_at
+                    FROM item_decisions d
+                    JOIN (
+                        SELECT item_id, MAX(id) as latest_id
+                        FROM item_decisions
+                        WHERE item_id IN ({placeholders})
+                        GROUP BY item_id
+                    ) latest ON d.id = latest.latest_id
+                """, tuple(item_ids))  # nosec B608
+                for row in cursor.fetchall():
+                    item_decisions[row['item_id']] = {
+                        'decision_count': 1,
+                        'last_decision': row['choice'],
+                        'last_decision_at': row['created_at'],
+                    }
+
+                cursor.execute(f"""
+                    SELECT item_id, COUNT(*) as decision_count
+                    FROM item_decisions
+                    WHERE item_id IN ({placeholders})
+                    GROUP BY item_id
+                """, tuple(item_ids))  # nosec B608
+                for row in cursor.fetchall():
+                    existing = item_decisions.get(row['item_id'], {})
+                    existing['decision_count'] = row['decision_count']
+                    item_decisions[row['item_id']] = existing
+
             for item in items:
                 item['tags'] = item_tags.get(item['id'], [])
+                decision_meta = item_decisions.get(item['id'], {})
+                item['decision_count'] = decision_meta.get('decision_count', 0)
+                item['last_decision'] = decision_meta.get('last_decision')
+                item['last_decision_at'] = decision_meta.get('last_decision_at')
                 status = item['status']
                 if status not in items_by_status:
                     items_by_status[status] = []

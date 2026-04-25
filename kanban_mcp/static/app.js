@@ -143,6 +143,16 @@ if (newItemCvFile) {
     newItemCvFile.addEventListener('change', updateNewItemFileLabel);
 }
 
+const editStatusSelect = document.getElementById('edit-status');
+if (editStatusSelect) {
+    editStatusSelect.addEventListener('change', () => {
+        const decisionStatus = document.getElementById('add-decision-status');
+        if (decisionStatus) {
+            decisionStatus.value = editStatusSelect.value;
+        }
+    });
+}
+
 // Load project tags on page load
 async function loadProjectTags() {
     if (!PROJECT_ID) return;
@@ -1064,24 +1074,25 @@ async function loadItemDecisions(itemId) {
 async function addDecision() {
     if (!currentEditItemId) return;
 
+    const statusSelect = document.getElementById('add-decision-status');
     const choiceInput = document.getElementById('add-decision-choice');
-    const rejectedInput = document.getElementById('add-decision-rejected');
-    const rationaleInput = document.getElementById('add-decision-rationale');
 
-    const choice = choiceInput.value.trim();
-    if (!choice) {
-        showToast('Choice is required', 'error');
+    const selectedStatus = statusSelect ? statusSelect.value : '';
+    if (!selectedStatus) {
+        showToast('Status is required', 'error');
         return;
     }
 
+    const choice = choiceInput.value.trim();
+
     const data = {
-        choice: choice,
-        rejected_alternatives: rejectedInput.value.trim() || null,
-        rationale: rationaleInput.value.trim() || null
+        status: selectedStatus,
+        decision_choice: choice || null,
+        decision_source: 'decision_form'
     };
 
     try {
-        const res = await fetch(`/api/items/${currentEditItemId}/decisions`, {
+        const res = await fetch(`/api/items/${currentEditItemId}/status`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -1089,13 +1100,19 @@ async function addDecision() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to add decision');
+            throw new Error(result.message || result.error || 'Failed to save decision');
         }
 
         // Clear inputs
         choiceInput.value = '';
-        rejectedInput.value = '';
-        rationaleInput.value = '';
+
+        if (result.new_status) {
+            const editStatus = document.getElementById('edit-status');
+            if (editStatus) {
+                editStatus.value = result.new_status;
+            }
+            moveCardToStatus(currentEditItemId, result.new_status);
+        }
 
         // Reload decisions list
         await loadItemDecisions(currentEditItemId);
@@ -1103,6 +1120,29 @@ async function addDecision() {
     } catch (err) {
         showToast(err.message, 'error');
     }
+}
+
+function moveCardToStatus(itemId, statusName) {
+    const card = document.querySelector(`.card[data-item-id="${itemId}"]`);
+    const targetColumn = document.querySelector(`.column-content[data-status="${statusName}"]`);
+
+    if (!card || !targetColumn) {
+        setTimeout(() => location.reload(), 300);
+        return;
+    }
+
+    const currentColumn = card.closest('.column-content');
+    if (!currentColumn || currentColumn === targetColumn) {
+        return;
+    }
+
+    targetColumn.appendChild(card);
+
+    [currentColumn, targetColumn].forEach(column => {
+        const countNode = column.closest('.column')?.querySelector('.column-count');
+        if (!countNode) return;
+        countNode.textContent = String(column.querySelectorAll('.card').length);
+    });
 }
 
 // Remove a decision
@@ -1186,6 +1226,10 @@ async function openEditModal(itemId) {
         document.getElementById('edit-complexity').value = item.complexity || '';
         document.getElementById('edit-status').value = item.status;
         document.getElementById('edit-type').value = item.type;
+        const decisionStatus = document.getElementById('add-decision-status');
+        if (decisionStatus) {
+            decisionStatus.value = item.status;
+        }
         updateEditItemModalFields(item.type);
 
         // Load parent dropdown (exclude current item to prevent circular reference)

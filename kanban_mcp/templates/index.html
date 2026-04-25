@@ -105,6 +105,18 @@
                     </div>
                     {% endif %}
 
+                    {% if item.decision_count %}
+                    <div class="card-decision-history" title="Decision History">
+                        <div class="card-decision-label">
+                            <i class="material-icons" style="font-size:13px;">history</i>
+                            Decision History ({{ item.decision_count }})
+                        </div>
+                        {% if item.last_decision %}
+                        <div class="card-decision-text">{{ item.last_decision }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
                     {% if item.type == 'epic' and epic_progress.get(item.id) %}
                     {% set prog = epic_progress[item.id] %}
                     <div class="epic-progress" onclick="event.stopPropagation(); filterByEpic({{ item.id }})" style="cursor: pointer;" title="Click to show children">
@@ -357,12 +369,9 @@
                 <div class="form-group">
                     <label class="form-label">Status</label>
                     <select class="form-select" id="edit-status">
-                        <option value="backlog">Backlog</option>
-                        <option value="todo">Todo</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="review">Review</option>
-                        <option value="done">Done</option>
-                        <option value="closed">Closed</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}">{{ status }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
@@ -419,12 +428,15 @@
                     </label>
                     <div class="decisions-list" id="edit-decisions-list"></div>
                     <div class="decision-form">
-                        <input type="text" class="form-input" id="add-decision-choice" placeholder="What was decided (required)" maxlength="200">
-                        <input type="text" class="form-input" id="add-decision-rejected" placeholder="Rejected alternatives (optional)" maxlength="500">
-                        <input type="text" class="form-input" id="add-decision-rationale" placeholder="Rationale (optional)" maxlength="200">
+                        <select class="form-select" id="add-decision-status">
+                            {% for status in statuses %}
+                            <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" class="form-input" id="add-decision-choice" placeholder="Decision note (optional)" maxlength="200">
                         <button class="btn btn-secondary btn-sm" onclick="addDecision()">
                             <i class="material-icons" style="font-size: 16px;">add</i>
-                            Add Decision
+                            Save Decision
                         </button>
                     </div>
                 </div>
@@ -721,6 +733,7 @@
     <script>
         const PROJECT_ID = '{{ current_project }}';
         const PROJECT_DIR = '{{ current_project_dir }}';
+        const AVAILABLE_STATUSES = {{ statuses|tojson }};
     </script>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
     <script src="{{ url_for('static', filename='dragdrop.js') }}"></script>
