@@ -351,6 +351,18 @@ class TestFileLinksAndDecisions:
             'PostgreSQL, MySQL', 'Zero config')
         assert result['success'] is True
 
+    def test_get_project_decisions_by_type(self, db, project_id):
+        feature_id = db.create_item(
+            project_id, 'feature', 'Feature Decision', '', 3)
+        issue_id = db.create_item(
+            project_id, 'issue', 'Issue Decision', '', 3)
+        db.add_decision(feature_id, 'Feature path')
+        db.add_decision(issue_id, 'Issue path')
+
+        decisions = db.get_project_decisions(project_id, type_name='feature')
+        assert len(decisions) == 1
+        assert decisions[0]['item_type'] == 'feature'
+
     def test_status_history_recorded_on_advance(
             self, db, project_id):
         item_id = db.create_item(

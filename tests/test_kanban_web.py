@@ -115,6 +115,25 @@ class TestKanbanWebAPI(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_api_add_decision_saves_note(self):
+        """POST /api/items/<id>/decisions should save a decision note."""
+        response = self.client.post(
+            f'/api/items/{self.test_item_id}/decisions',
+            json={
+                'choice': 'Keep current approach',
+                'rejected_alternatives': 'Rewrite',
+                'rationale': 'Low risk',
+            },
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 201)
+        data = response.get_json()
+        self.assertTrue(data['success'])
+
+        decisions = self.db.get_item_decisions(self.test_item_id)
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(decisions[0]['choice'], 'Keep current approach')
+
     # --- Get Item API Tests ---
 
     def test_api_get_item(self):
@@ -130,6 +149,26 @@ class TestKanbanWebAPI(unittest.TestCase):
         """GET /api/items/<id> should return 404 for non-existent item."""
         response = self.client.get('/api/items/99999')
         self.assertEqual(response.status_code, 404)
+
+    def test_api_get_project_decisions_filters_by_type(self):
+        """GET /api/projects/<id>/decisions should filter by item type."""
+        feature_item_id = self.db.create_item(
+            project_id=self.test_project_id,
+            type_name='feature',
+            title='Feature Item',
+            description='Feature description',
+            priority=2,
+        )
+        self.db.add_decision(feature_item_id, 'Feature decision')
+        self.db.add_decision(self.test_item_id, 'Issue decision')
+
+        response = self.client.get(
+            f'/api/projects/{self.test_project_id}/decisions?type=feature'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(len(data['decisions']), 1)
+        self.assertEqual(data['decisions'][0]['item_type'], 'feature')
 
     # --- Create Update API Tests ---
 

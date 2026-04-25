@@ -399,21 +399,6 @@
                     </div>
                     <div class="tags-container" id="edit-current-tags" style="margin-top: 8px;"></div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i>
-                        Linked Files
-                    </label>
-                    <div class="linked-files-list" id="edit-linked-files"></div>
-                    <div class="file-link-form">
-                        <input type="text" class="form-input file-path-input" id="add-file-path" placeholder="File path (e.g., src/main.py)">
-                        <input type="number" class="form-input line-input" id="add-file-start" placeholder="Start line">
-                        <input type="number" class="form-input line-input" id="add-file-end" placeholder="End line">
-                        <button class="btn btn-secondary btn-sm" onclick="addFileLink()">
-                            <i class="material-icons" style="font-size: 16px;">add</i>
-                        </button>
-                    </div>
-                </div>
                 <div class="form-group" id="edit-attachments-group" style="display: none;">
                     <label class="form-label">
                         <i class="material-icons" style="font-size:14px; vertical-align:middle;">description</i>
@@ -428,11 +413,6 @@
                     </label>
                     <div class="decisions-list" id="edit-decisions-list"></div>
                     <div class="decision-form">
-                        <select class="form-select" id="add-decision-status">
-                            {% for status in statuses %}
-                            <option value="{{ status }}">{{ status }}</option>
-                            {% endfor %}
-                        </select>
                         <input type="text" class="form-input" id="add-decision-choice" placeholder="Decision note (optional)" maxlength="200">
                         <button class="btn btn-secondary btn-sm" onclick="addDecision()">
                             <i class="material-icons" style="font-size: 16px;">add</i>

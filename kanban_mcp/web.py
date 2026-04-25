@@ -80,6 +80,7 @@ def api_get_item(item_id):
         return jsonify({'error': 'Item not found'}), 404
     return jsonify({
         'id': item['id'],
+        'project_id': item['project_id'],
         'title': item['title'],
         'description': item['description'],
         'priority': item['priority'],
@@ -781,6 +782,25 @@ def api_add_decision(item_id):
         return jsonify(result), 201
     except ValueError as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/projects/<project_id>/decisions', methods=['GET'])
+def api_get_project_decisions(project_id):
+    """Get decisions for a project, optionally filtered by item type."""
+    type_name = request.args.get('type', '').strip() or None
+
+    try:
+        limit = int(request.args.get('limit', '100'))
+        limit = max(1, min(limit, 500))
+    except ValueError:
+        limit = 100
+
+    decisions = db.get_project_decisions(
+        project_id,
+        type_name=type_name,
+        limit=limit,
+    )
+    return jsonify({'decisions': decisions})
 
 
 @app.route('/api/decisions/<int:decision_id>', methods=['DELETE'])

@@ -143,16 +143,6 @@ if (newItemCvFile) {
     newItemCvFile.addEventListener('change', updateNewItemFileLabel);
 }
 
-const editStatusSelect = document.getElementById('edit-status');
-if (editStatusSelect) {
-    editStatusSelect.addEventListener('change', () => {
-        const decisionStatus = document.getElementById('add-decision-status');
-        if (decisionStatus) {
-            decisionStatus.value = editStatusSelect.value;
-        }
-    });
-}
-
 // Load project tags on page load
 async function loadProjectTags() {
     if (!PROJECT_ID) return;
@@ -1074,33 +1064,48 @@ async function loadItemDecisions(itemId) {
 async function addDecision() {
     if (!currentEditItemId) return;
 
-    const statusSelect = document.getElementById('add-decision-status');
     const choiceInput = document.getElementById('add-decision-choice');
-
-    const selectedStatus = statusSelect ? statusSelect.value : '';
+    const selectedStatus = document.getElementById('edit-status')?.value || '';
     if (!selectedStatus) {
         showToast('Status is required', 'error');
         return;
     }
 
     const choice = choiceInput.value.trim();
-
-    const data = {
-        status: selectedStatus,
-        decision_choice: choice || null,
-        decision_source: 'decision_form'
-    };
+    const currentStatus = document.getElementById('edit-status')?.value || '';
+    const statusRationale = `Status: ${selectedStatus}`;
 
     try {
-        const res = await fetch(`/api/items/${currentEditItemId}/status`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        const result = await res.json();
+        let result;
 
-        if (!res.ok || !result.success) {
-            throw new Error(result.message || result.error || 'Failed to save decision');
+        if (selectedStatus === currentStatus) {
+            const res = await fetch(`/api/items/${currentEditItemId}/decisions`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    choice: choice || `Decision: ${selectedStatus}`,
+                    rationale: statusRationale,
+                })
+            });
+            result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.error || 'Failed to save decision');
+            }
+        } else {
+            const res = await fetch(`/api/items/${currentEditItemId}/status`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    status: selectedStatus,
+                    decision_choice: choice || null,
+                    rationale: statusRationale,
+                    decision_source: 'decision_form'
+                })
+            });
+            result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || result.error || 'Failed to save decision');
+            }
         }
 
         // Clear inputs
@@ -1226,10 +1231,6 @@ async function openEditModal(itemId) {
         document.getElementById('edit-complexity').value = item.complexity || '';
         document.getElementById('edit-status').value = item.status;
         document.getElementById('edit-type').value = item.type;
-        const decisionStatus = document.getElementById('add-decision-status');
-        if (decisionStatus) {
-            decisionStatus.value = item.status;
-        }
         updateEditItemModalFields(item.type);
 
         // Load parent dropdown (exclude current item to prevent circular reference)

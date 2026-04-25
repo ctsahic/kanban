@@ -256,6 +256,33 @@ class KanbanDB:
                 result['parent_id'] = None
             return result
 
+    def get_project_decisions(self,
+                              project_id: str,
+                              type_name: str = None,
+                              limit: int = 100) -> List[Dict]:
+        """Get decisions for a project, optionally filtered by item type."""
+        query = """
+            SELECT d.id, d.item_id, i.title as item_title,
+                   it.name as item_type, d.choice,
+                   d.rejected_alternatives, d.rationale, d.created_at
+            FROM item_decisions d
+            JOIN items i ON d.item_id = i.id
+            JOIN item_types it ON i.type_id = it.id
+            WHERE i.project_id = %s
+        """
+        params = [project_id]
+
+        if type_name:
+            query += " AND it.name = %s"
+            params.append(type_name)
+
+        query += " ORDER BY d.created_at DESC, d.id DESC LIMIT %s"
+        params.append(limit)
+
+        with self._db_cursor(dictionary=True) as cursor:
+            cursor.execute(self._sql(query), tuple(params))
+            return cursor.fetchall()
+
     def list_items(self, project_id: str = None, type_name: str = None,
                    status_name: str = None, tag_names: List[str] = None,
                    tag_match_mode: str = "any", limit: int = 50) -> List[Dict]:
