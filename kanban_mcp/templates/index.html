@@ -84,8 +84,10 @@
                     <div class="card-header">
                         <span class="card-id">#{{ item.id }}</span>
                         <div style="display: flex; gap: 4px;">
+                            {% if item.priority is not none and item.type != 'cv' %}
                             <span class="card-priority">P{{ item.priority }}</span>
-                            {% if item.complexity %}<span class="card-complexity complexity-{{ item.complexity }}">C{{ item.complexity }}</span>{% endif %}
+                            {% endif %}
+                            {% if item.complexity and item.type != 'cv' %}<span class="card-complexity complexity-{{ item.complexity }}">C{{ item.complexity }}</span>{% endif %}
                         </div>
                     </div>
                     <div class="card-title">{{ item.title }}</div>
@@ -189,8 +191,10 @@
                             <i class="material-icons" style="font-size:14px; margin-right:4px;">account_tree</i>
                             {% elif item.type == 'question' %}
                             <i class="material-icons" style="font-size:14px; margin-right:4px;">help_outline</i>
+                            {% elif item.type == 'cv' %}
+                            <i class="material-icons" style="font-size:14px; margin-right:4px;">description</i>
                             {% endif %}
-                            {{ item.type }}
+                            {% if item.type == 'cv' %}New CV{% else %}{{ item.type }}{% endif %}
                         </span>
                         <button class="card-action" onclick="event.stopPropagation(); openUpdateModal({{ item.id }})" title="Add update">
                             <i class="material-icons">add_comment</i>
@@ -329,7 +333,7 @@
                     <label class="form-label">Description</label>
                     <textarea class="form-textarea" id="edit-description"></textarea>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="edit-priority-group">
                     <label class="form-label">Priority</label>
                     <select class="form-select" id="edit-priority">
                         <option value="1">P1 - Critical</option>
@@ -339,7 +343,7 @@
                         <option value="5">P5 - Minimal</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="edit-complexity-group">
                     <label class="form-label">Complexity</label>
                     <select class="form-select" id="edit-complexity">
                         <option value="">Not Set</option>
@@ -401,6 +405,13 @@
                         </button>
                     </div>
                 </div>
+                <div class="form-group" id="edit-attachments-group" style="display: none;">
+                    <label class="form-label">
+                        <i class="material-icons" style="font-size:14px; vertical-align:middle;">description</i>
+                        CV Attachment
+                    </label>
+                    <div class="linked-files-list" id="edit-attachments-list"></div>
+                </div>
                 <div class="form-group">
                     <label class="form-label">
                         <i class="material-icons" style="font-size:14px; vertical-align:middle;">history</i>
@@ -458,7 +469,7 @@
     <div class="modal-overlay" id="newitem-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">New Item</span>
+                <span class="modal-title" id="newitem-modal-title">New CV</span>
                 <button class="close-btn" onclick="closeModal('newitem-modal')">
                     <i class="material-icons">close</i>
                 </button>
@@ -467,6 +478,7 @@
                 <div class="form-group">
                     <label class="form-label">Type</label>
                     <select class="form-select" id="newitem-type">
+                        <option value="cv" selected>New CV</option>
                         <option value="issue">Issue</option>
                         <option value="feature">Feature</option>
                         <option value="epic">Epic</option>
@@ -477,7 +489,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Title</label>
-                    <input type="text" class="form-input" id="newitem-title" placeholder="Enter title...">
+                    <input type="text" class="form-input" id="newitem-title" placeholder="שם המועמד">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Parent Epic (optional)</label>
@@ -489,7 +501,7 @@
                     <label class="form-label">Description</label>
                     <textarea class="form-textarea" id="newitem-description" placeholder="Optional description..."></textarea>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="newitem-priority-group">
                     <label class="form-label">Priority</label>
                     <select class="form-select" id="newitem-priority">
                         <option value="1">P1 - Critical</option>
@@ -499,7 +511,7 @@
                         <option value="5">P5 - Minimal</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="newitem-complexity-group">
                     <label class="form-label">Complexity (Optional)</label>
                     <select class="form-select" id="newitem-complexity">
                         <option value="" selected>Not Set</option>
@@ -509,6 +521,11 @@
                         <option value="4">C4 - Complex</option>
                         <option value="5">C5 - Very Complex</option>
                     </select>
+                </div>
+                <div class="form-group" id="newitem-cv-group">
+                    <label class="form-label">הוסף קורות חיים</label>
+                    <input type="file" class="form-input" id="newitem-cv-file" accept=".pdf,.doc,.docx,.rtf,.txt,.png,.jpg,.jpeg">
+                    <small id="newitem-cv-file-name" style="color: var(--text-disabled); font-size: 11px; display: block; margin-top: 6px;"></small>
                 </div>
             </div>
             <div class="modal-footer">

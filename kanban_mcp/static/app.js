@@ -22,6 +22,127 @@ let currentEditItemId = null;
 // --- Epic Filter State ---
 let activeEpicFilter = null;
 
+const CV_ITEM_TYPE = 'cv';
+
+function isCvItemType(typeName) {
+    return typeName === CV_ITEM_TYPE;
+}
+
+function getItemTypeLabel(typeName) {
+    return isCvItemType(typeName) ? 'New CV' : typeName;
+}
+
+function updateNewItemModalFields() {
+    const typeSelect = document.getElementById('newitem-type');
+    const typeName = typeSelect ? typeSelect.value : CV_ITEM_TYPE;
+    const isCv = isCvItemType(typeName);
+
+    const title = document.getElementById('newitem-modal-title');
+    const titleInput = document.getElementById('newitem-title');
+    const priorityGroup = document.getElementById('newitem-priority-group');
+    const complexityGroup = document.getElementById('newitem-complexity-group');
+    const cvGroup = document.getElementById('newitem-cv-group');
+
+    if (title) {
+        title.textContent = isCv ? 'New CV' : 'New Item';
+    }
+    if (titleInput) {
+        titleInput.placeholder = isCv ? 'שם המועמד' : 'Enter title...';
+    }
+    if (priorityGroup) {
+        priorityGroup.style.display = isCv ? 'none' : '';
+    }
+    if (complexityGroup) {
+        complexityGroup.style.display = isCv ? 'none' : '';
+    }
+    if (cvGroup) {
+        cvGroup.style.display = isCv ? '' : 'none';
+    }
+}
+
+function updateNewItemFileLabel() {
+    const fileInput = document.getElementById('newitem-cv-file');
+    const fileLabel = document.getElementById('newitem-cv-file-name');
+    if (!fileInput || !fileLabel) return;
+    fileLabel.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : '';
+}
+
+function updateEditItemModalFields(typeName) {
+    const isCv = isCvItemType(typeName);
+    const priorityGroup = document.getElementById('edit-priority-group');
+    const complexityGroup = document.getElementById('edit-complexity-group');
+    const attachmentsGroup = document.getElementById('edit-attachments-group');
+
+    if (priorityGroup) {
+        priorityGroup.style.display = isCv ? 'none' : '';
+    }
+    if (complexityGroup) {
+        complexityGroup.style.display = isCv ? 'none' : '';
+    }
+    if (attachmentsGroup) {
+        attachmentsGroup.style.display = isCv ? '' : 'none';
+    }
+}
+
+async function loadItemAttachments(itemId) {
+    const container = document.getElementById('edit-attachments-list');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`/api/items/${itemId}/attachments`);
+        const data = await res.json();
+        const attachments = data.attachments || [];
+
+        container.replaceChildren();
+
+        if (attachments.length === 0) {
+            const emptySpan = document.createElement('span');
+            emptySpan.style.color = 'var(--text-disabled)';
+            emptySpan.textContent = 'No CV uploaded';
+            container.appendChild(emptySpan);
+            return;
+        }
+
+        attachments.forEach(attachment => {
+            const row = document.createElement('a');
+            row.className = 'linked-file-item';
+            row.href = `/api/items/${itemId}/attachments/${attachment.id}`;
+            row.target = '_blank';
+            row.rel = 'noopener noreferrer';
+
+            const icon = document.createElement('i');
+            icon.className = 'material-icons';
+            icon.style.fontSize = '16px';
+            icon.style.color = 'var(--text-secondary)';
+            icon.textContent = 'picture_as_pdf';
+            row.appendChild(icon);
+
+            const pathSpan = document.createElement('span');
+            pathSpan.className = 'file-path-text';
+            pathSpan.textContent = attachment.file_name;
+            row.appendChild(pathSpan);
+
+            container.appendChild(row);
+        });
+    } catch (err) {
+        container.textContent = '';
+        const span = document.createElement('span');
+        span.style.color = 'var(--md-sys-color-error)';
+        span.textContent = 'Error loading attachment';
+        container.appendChild(span);
+    }
+}
+
+const newItemTypeSelect = document.getElementById('newitem-type');
+if (newItemTypeSelect) {
+    newItemTypeSelect.addEventListener('change', updateNewItemModalFields);
+}
+
+const newItemCvFile = document.getElementById('newitem-cv-file');
+if (newItemCvFile) {
+    newItemCvFile.addEventListener('change', updateNewItemFileLabel);
+}
+
 // Load project tags on page load
 async function loadProjectTags() {
     if (!PROJECT_ID) return;
@@ -618,7 +739,7 @@ async function loadItemChildren(itemId) {
             // Type badge
             const typeBadge = document.createElement('span');
             typeBadge.className = 'child-item-type type-' + child.type_name;
-            typeBadge.textContent = child.type_name;
+            typeBadge.textContent = getItemTypeLabel(child.type_name);
             row.appendChild(typeBadge);
 
             // Status badge
@@ -1065,6 +1186,7 @@ async function openEditModal(itemId) {
         document.getElementById('edit-complexity').value = item.complexity || '';
         document.getElementById('edit-status').value = item.status;
         document.getElementById('edit-type').value = item.type;
+        updateEditItemModalFields(item.type);
 
         // Load parent dropdown (exclude current item to prevent circular reference)
         await loadEpicsForDropdown('edit-parent', item.parent_id, itemId);
@@ -1082,6 +1204,10 @@ async function openEditModal(itemId) {
 
         // Load linked files
         await loadItemFiles(itemId);
+
+        if (item.type === CV_ITEM_TYPE) {
+            await loadItemAttachments(itemId);
+        }
 
         // Load decision history
         await loadItemDecisions(itemId);
@@ -1236,12 +1362,19 @@ async function loadEpicsForDropdown(selectId, currentParentId = null, excludeIte
 
 // --- Create Item ---
 async function openNewItemModal() {
+    document.getElementById('newitem-modal-title').textContent = 'New CV';
     document.getElementById('newitem-title').value = '';
     document.getElementById('newitem-description').value = '';
-    document.getElementById('newitem-type').value = 'issue';
+    document.getElementById('newitem-type').value = CV_ITEM_TYPE;
     document.getElementById('newitem-priority').value = '3';
     document.getElementById('newitem-complexity').value = '';
     document.getElementById('newitem-parent').value = '';
+    const fileInput = document.getElementById('newitem-cv-file');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    updateNewItemFileLabel();
+    updateNewItemModalFields();
     await loadEpicsForDropdown('newitem-parent');
     openModal('newitem-modal');
 }
@@ -1253,23 +1386,43 @@ async function createItem() {
         return;
     }
 
+    const itemType = document.getElementById('newitem-type').value;
+    const isCv = isCvItemType(itemType);
+    const fileInput = document.getElementById('newitem-cv-file');
+    const cvFile = fileInput && fileInput.files.length > 0 ? fileInput.files[0] : null;
+
+    if (isCv && !cvFile) {
+        showToast('CV file is required', 'error');
+        return;
+    }
+
     const complexityVal = document.getElementById('newitem-complexity').value;
     const parentVal = document.getElementById('newitem-parent').value;
-    const data = {
-        project_id: PROJECT_ID,
-        type: document.getElementById('newitem-type').value,
-        title: title,
-        description: document.getElementById('newitem-description').value,
-        priority: parseInt(document.getElementById('newitem-priority').value),
-        complexity: complexityVal ? parseInt(complexityVal) : null,
-        parent_id: parentVal ? parseInt(parentVal) : null
-    };
+    const formData = new FormData();
+    formData.append('project_id', PROJECT_ID);
+    formData.append('type', itemType);
+    formData.append('title', title);
+    formData.append('description', document.getElementById('newitem-description').value);
+
+    if (!isCv) {
+        formData.append('priority', document.getElementById('newitem-priority').value);
+        if (complexityVal) {
+            formData.append('complexity', complexityVal);
+        }
+    }
+
+    if (parentVal) {
+        formData.append('parent_id', parentVal);
+    }
+
+    if (cvFile) {
+        formData.append('cv_file', cvFile);
+    }
 
     try {
         const res = await fetch('/api/items', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+            body: formData
         });
         const result = await res.json();
 
@@ -1556,7 +1709,7 @@ function renderSearchResults(data, container) {
 
             const typeBadge = document.createElement('span');
             typeBadge.className = 'search-result-type type-' + item.type_name;
-            typeBadge.textContent = item.type_name;
+            typeBadge.textContent = getItemTypeLabel(item.type_name);
             row.appendChild(typeBadge);
 
             const statusBadge = document.createElement('span');
@@ -1662,7 +1815,7 @@ function renderSemanticSearchResults(data, container) {
             if (item.type_name) {
                 const typeBadge = document.createElement('span');
                 typeBadge.className = 'search-result-type type-' + item.type_name;
-                typeBadge.textContent = item.type_name;
+                typeBadge.textContent = getItemTypeLabel(item.type_name);
                 row.appendChild(typeBadge);
             }
 

@@ -3,8 +3,11 @@
 
 import os
 import sys
+from io import BytesIO
 
-from flask import Flask, render_template, request, jsonify, Response
+from flask import (
+    Flask, render_template, request, jsonify, Response, send_file,
+)
 from kanban_mcp.core import KanbanDB
 from kanban_mcp.export import (
     ExportBuilder,
@@ -250,15 +253,26 @@ def api_export():
 @app.route('/api/items', methods=['POST'])
 def api_create_item():
     """Create a new item."""
-    data = request.get_json() or {}
+    if request.files:
+        data = request.form
+    else:
+        data = request.get_json(silent=True) or {}
 
     project_id = data.get('project_id')
     item_type = data.get('type')
     title = data.get('title')
     description = data.get('description', '')
-    priority = data.get('priority', 3)
-    complexity = data.get('complexity')
     parent_id = data.get('parent_id')
+
+    def _int_or_none(value, default=None):
+        if value in (None, ''):
+            return default
+        return int(value)
+
+    is_cv = item_type == 'cv'
+    priority = None if is_cv else _int_or_none(data.get('priority'), 3)
+    complexity = None if is_cv else _int_or_none(data.get('complexity'))
+    cv_file = request.files.get('cv_file') if request.files else None
 
     if not project_id or not item_type or not title:
         return jsonify({
@@ -275,6 +289,15 @@ def api_create_item():
             description, priority, complexity,
             parent_id=parent_id,
         )
+
+        if cv_file and cv_file.filename:
+            db.add_item_attachment(
+                item_id,
+                cv_file.filename,
+                cv_file.read(),
+                cv_file.mimetype,
+            )
+
         return jsonify({
             'success': True, 'item_id': item_id
         }), 201
@@ -291,9 +314,8 @@ def api_list_items():
 
     with db._db_cursor(dictionary=True) as cursor:
         cursor.execute(db._sql("""
-            SELECT i.id, i.title, t.name as type, s.name as status
+            SELECT i.id, i.title, s.name as status
             FROM items i
-            JOIN item_types t ON i.type_id = t.id
             JOIN statuses s ON i.status_id = s.id
             WHERE i.project_id = %s
             ORDER BY i.id DESC
@@ -640,6 +662,28 @@ def api_unlink_file(item_id):
 
     result = db.unlink_file(item_id, file_path, line_start, line_end)
     return jsonify(result)
+
+
+@app.route('/api/items/<int:item_id>/attachments', methods=['GET'])
+def api_get_item_attachments(item_id):
+    """Get uploaded attachments for an item."""
+    attachments = db.get_item_attachments(item_id)
+    return jsonify({'attachments': attachments})
+
+
+@app.route('/api/items/<int:item_id>/attachments/<int:attachment_id>', methods=['GET'])
+def api_download_item_attachment(item_id, attachment_id):
+    """Download a stored attachment."""
+    attachment = db.get_item_attachment(item_id, attachment_id)
+    if not attachment:
+        return jsonify({'error': 'Attachment not found'}), 404
+
+    return send_file(
+        BytesIO(attachment['file_data']),
+        as_attachment=True,
+        download_name=attachment['file_name'],
+        mimetype=attachment.get('mime_type') or 'application/octet-stream',
+    )
 
 
 # --- Decision History API Routes ---

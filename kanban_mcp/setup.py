@@ -666,7 +666,7 @@ def _run_migrations_with_backend(backend) -> None:
             continue
 
         print(f"  Applying {mfile.name}...")
-        sql = mfile.read_text()
+        sql = mfile.read_text(encoding='utf-8')
         try:
             with backend.db_cursor(commit=True) as cursor:
                 for stmt in _split_sql(sql):
@@ -787,7 +787,7 @@ def _run_migrations(config: dict) -> None:
             continue
 
         print(f"  Applying {mfile.name}...")
-        sql = mfile.read_text()
+        sql = mfile.read_text(encoding='utf-8')
         try:
             for stmt in _split_sql(sql):
                 try:
@@ -897,7 +897,7 @@ def _auto_migrate_backend(backend, log) -> None:
                 continue
 
             log.info("Applying migration: %s", mfile.name)
-            sql = mfile.read_text()
+            sql = mfile.read_text(encoding='utf-8')
             try:
                 with backend.db_cursor(commit=True) as cursor:
                     skipped = False
@@ -980,7 +980,7 @@ def _auto_migrate_mysql_legacy(db_config: dict, log) -> None:
                 continue
 
             log.info("Applying migration: %s", mfile.name)
-            sql = mfile.read_text()
+            sql = mfile.read_text(encoding='utf-8')
             try:
                 for stmt in _split_sql(sql):
                     try:

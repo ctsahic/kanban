@@ -1582,6 +1582,63 @@ class KanbanDB:
             """), (item_id,))
             return cursor.fetchall()
 
+    def add_item_attachment(self,
+                            item_id: int,
+                            file_name: str,
+                            file_data: bytes,
+                            mime_type: str = None) -> Dict[str, Any]:
+        """Store an uploaded file blob for an item."""
+        with self._db_cursor(dictionary=True, commit=True) as cursor:
+            cursor.execute(
+                self._sql("SELECT id FROM items WHERE id = %s"),
+                (item_id,))
+            if not cursor.fetchone():
+                raise ValueError(f"Item {item_id} not found")
+
+            cursor.execute(self._sql("""
+                SELECT id FROM item_attachments
+                WHERE item_id = %s AND file_name = %s
+            """), (item_id, file_name))
+            if cursor.fetchone():
+                return {
+                    'success': False,
+                    'error': 'Attachment already exists for this item'
+                }
+
+            cursor.execute(self._sql("""
+                INSERT INTO item_attachments
+                    (item_id, file_name, mime_type, file_data)
+                VALUES (%s, %s, %s, %s)
+            """), (item_id, file_name, mime_type, file_data))
+
+            return {
+                'success': True,
+                'attachment_id': cursor.lastrowid,
+            }
+
+    def get_item_attachments(self, item_id: int) -> List[Dict]:
+        """Get uploaded file blobs for an item."""
+        with self._db_cursor(dictionary=True) as cursor:
+            cursor.execute(self._sql("""
+                SELECT id, file_name, mime_type, created_at
+                FROM item_attachments
+                WHERE item_id = %s
+                ORDER BY created_at DESC, id DESC
+            """), (item_id,))
+            return cursor.fetchall()
+
+    def get_item_attachment(self,
+                            item_id: int,
+                            attachment_id: int) -> Optional[Dict]:
+        """Get a specific attachment blob for an item."""
+        with self._db_cursor(dictionary=True) as cursor:
+            cursor.execute(self._sql("""
+                SELECT id, item_id, file_name, mime_type, file_data, created_at
+                FROM item_attachments
+                WHERE item_id = %s AND id = %s
+            """), (item_id, attachment_id))
+            return cursor.fetchone()
+
     # --- Decision History Methods ---
 
     def add_decision(self,
