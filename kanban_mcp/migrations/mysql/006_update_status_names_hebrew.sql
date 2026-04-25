@@ -8,3 +8,5 @@ UPDATE statuses SET name = 'ראיון מקצועי' WHERE name = 'in_progress';
 UPDATE statuses SET name = 'רותם' WHERE name = 'review';
 UPDATE statuses SET name = 'שכר' WHERE name = 'done';
 UPDATE statuses SET name = 'סיווג' WHERE name = 'closed';
+
+

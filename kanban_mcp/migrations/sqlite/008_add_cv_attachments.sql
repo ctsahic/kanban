@@ -9,7 +9,8 @@ INSERT OR IGNORE INTO type_status_workflow (type_id, status_id, sequence) VALUES
     (7, 3, 3),
     (7, 4, 4),
     (7, 5, 5),
-    (7, 6, 6);
+    (7, 6, 6),
+    (7, 7, 7);
 
 CREATE TABLE IF NOT EXISTS item_attachments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

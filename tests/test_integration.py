@@ -116,6 +116,15 @@ class TestStatusWorkflow:
         assert result['success'] is True
         assert result['new_status'] == 'in_progress'
 
+    def test_cv_item_can_set_no_match_status(self, db, project_id):
+        item_id = db.create_item(
+            project_id, 'cv', 'Candidate', '', 3)
+        result = db.set_status(item_id, 'אין התאמה')
+        assert result['success'] is True
+        assert result['new_status'] == 'אין התאמה'
+        item = db.get_item(item_id)
+        assert item['status_name'] == 'אין התאמה'
+
     def test_close_item_sets_closed_at(self, db, project_id):
         item_id = db.create_item(
             project_id, 'issue', 'To Close', '', 3)
