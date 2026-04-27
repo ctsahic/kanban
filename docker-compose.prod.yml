@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mysql:8.0
+    ports:
+      - "${KANBAN_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kanban_root}
+      MYSQL_DATABASE: ${KANBAN_DB_NAME:-kanban}
+      MYSQL_USER: ${KANBAN_DB_USER:-kanban}
+      MYSQL_PASSWORD: ${KANBAN_DB_PASSWORD:-changeme}
+    volumes:
+      - kanban_data:/var/lib/mysql
+    healthcheck:
+      test: mysqladmin ping -h localhost
+      interval: 5s
+      retries: 10
+
+  web:
+    image: ${KANBAN_WEB_IMAGE:-kanban-mcp-web:latest}
+    ports:
+      - "5000:5000"
+    environment:
+      KANBAN_DB_HOST: db
+      KANBAN_DB_USER: ${KANBAN_DB_USER:-kanban}
+      KANBAN_DB_PASSWORD: ${KANBAN_DB_PASSWORD:-changeme}
+      KANBAN_DB_NAME: ${KANBAN_DB_NAME:-kanban}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  kanban_data:

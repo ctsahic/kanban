@@ -129,6 +129,27 @@ The install script can start MySQL/MariaDB via Docker for you (`./install.sh --a
 
 3. **Configure your MCP client** — see [MCP Client Setup](#mcp-client-setup). The database is exposed on port 3306 so the host-side MCP server can connect.
 
+### Production Docker deploy without a registry
+
+If you want to ship one built image to each Linux environment and keep database state separate per environment, use the production compose file. No registry is required.
+
+
+Build and export the web image:
+
+```bash
+docker build -t kanban-mcp-web:1.0.0 .
+docker save -o kanban-mcp-web_1.0.0.tar kanban-mcp-web:1.0.0
+```
+
+Load and deploy on the target host:
+
+```bash
+docker load -i kanban-mcp-web_1.0.0.tar
+KANBAN_WEB_IMAGE=kanban-mcp-web:1.0.0 docker compose -f docker-compose.prod.yml up -d
+```
+
+Each environment gets its own MySQL volume and the container runs migrations on startup. There is no cross-environment data migration step.
+
 ## Database Setup
 
 kanban-mcp uses **SQLite by default** — no setup required. The database
