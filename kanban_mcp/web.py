@@ -7,6 +7,7 @@ from io import BytesIO
 
 from flask import (
     Flask, render_template, request, jsonify, Response, send_file,
+    session, redirect, url_for,
 )
 from kanban_mcp.core import KanbanDB
 from kanban_mcp.export import (
@@ -17,6 +18,9 @@ from kanban_mcp.export import (
 )
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'kanban-mcp-secret-key')
+LOGIN_USERNAME = os.environ.get('KANBAN_WEB_LOGIN_USER', 'admin')
+LOGIN_PASSWORD = os.environ.get('KANBAN_WEB_LOGIN_PASS', '1234')
 db = None
 
 
@@ -64,10 +68,57 @@ def _get_db():
     return db
 
 
+def _is_public_request():
+    if request.endpoint in ('login', 'logout', 'static'):
+        return True
+    if request.path.startswith('/static/'):
+        return True
+    return False
+
+
+@app.before_request
+def _require_login():
+    if _is_public_request():
+        return
+    if session.get('logged_in'):
+        return
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Authentication required'}), 401
+    return redirect(url_for('login', next=request.path))
+
+
 @app.before_request
 def _ensure_db():
     """Initialize DB on first request, not at import time."""
+    if _is_public_request():
+        return
     _get_db()
+
+
+# --- Auth Routes ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    next_url = request.args.get('next', '') or request.form.get('next', '')
+    if request.method == 'POST':
+        username = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
+        if username == LOGIN_USERNAME and password == LOGIN_PASSWORD:
+            session['logged_in'] = True
+            session['username'] = username
+            if not next_url.startswith('/'):
+                next_url = url_for('index')
+            return redirect(next_url or url_for('index'))
+        error = 'Invalid username or password'
+    return render_template('login.html', error=error, next=next_url)
+
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 
 # --- API Routes ---
@@ -1110,6 +1161,8 @@ def index():
                 current_project_dir = p['directory_path']
                 break
 
+    user = session.get('username')
+
     return render_template(
         'index.html',
         projects=projects,
@@ -1118,7 +1171,8 @@ def index():
         statuses=get_statuses(),
         items_by_status=items_by_status,
         relationships=relationships,
-        epic_progress=epic_progress
+        epic_progress=epic_progress,
+        user=user,
     )
 
 

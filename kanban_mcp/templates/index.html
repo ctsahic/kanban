@@ -26,6 +26,14 @@
                 </select>
                 <i class="material-icons select-arrow">arrow_drop_down</i>
             </div>
+            {% if user %}
+            <div class="user-info">
+                <span>Logged in as {{ user }}</span>
+                <button class="logout-btn" onclick="window.location.href='{{ url_for('logout') }}'" title="Logout">
+                    <i class="material-icons">logout</i>
+                </button>
+            </div>
+            {% endif %}
             {% if current_project %}
             <button class="delete-project-btn" onclick="confirmDeleteProject('{{ current_project }}', '{{ projects|selectattr('id', 'equalto', current_project)|map(attribute='name')|first|default('Unknown Project') }}')" title="Delete project">
                 <i class="material-icons">delete</i>

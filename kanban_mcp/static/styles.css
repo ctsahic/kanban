@@ -1049,6 +1049,97 @@
             gap: var(--spacing-sm);
         }
 
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-medium-emphasis);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: var(--text-high-emphasis);
+            border-radius: var(--border-radius-sm);
+            padding: 6px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .login-page {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg);
+            min-height: calc(100vh - 64px);
+        }
+
+        .login-card {
+            width: min(420px, 100%);
+            background: var(--md-sys-color-surface);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--elevation-4);
+        }
+
+        .login-header {
+            font-size: 24px;
+            margin-bottom: var(--spacing-md);
+            color: var(--text-high-emphasis);
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 12px 14px;
+            margin-bottom: var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid rgba(255,255,255,0.12);
+            background: var(--md-sys-color-surface-variant);
+            color: var(--text-high-emphasis);
+        }
+
+        .login-card input:focus {
+            outline: none;
+            border-color: var(--md-sys-color-primary);
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            background: var(--md-sys-color-primary);
+            color: #fff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .login-card button:hover {
+            background: var(--md-sys-color-primary-variant);
+        }
+
+        .login-error {
+            margin-bottom: var(--spacing-sm);
+            color: var(--md-sys-color-error);
+        }
+
+        .login-note {
+            margin-top: var(--spacing-sm);
+            color: var(--text-medium-emphasis);
+            font-size: 13px;
+        }
+
         /* Card action button */
         .card-action {
             background: none;
