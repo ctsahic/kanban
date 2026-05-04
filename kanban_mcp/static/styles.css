@@ -1049,6 +1049,40 @@
             gap: var(--spacing-sm);
         }
 
+        .app-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 24px;
+        }
+
+        .app-bar-actions.hidden {
+            display: none;
+        }
+
+        .app-bar-action-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-high-emphasis);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .app-bar-action-btn:hover {
+            background: rgba(255,255,255,0.16);
+            transform: scale(1.05);
+        }
+
+        .app-bar-action-btn i {
+            font-size: 20px;
+        }
+
         .user-info {
             display: flex;
             align-items: center;

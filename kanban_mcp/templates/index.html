@@ -15,6 +15,17 @@
             <i class="material-icons">view_kanban</i>
             Kanban Board
         </div>
+        <div id="app-bar-actions" class="app-bar-actions{% if not current_project %} hidden{% endif %}">
+            <button class="app-bar-action-btn" onclick="openNewItemModal()" title="New Item">
+                <i class="material-icons">add</i>
+            </button>
+            <button class="app-bar-action-btn" onclick="openSearchModal()" title="Search">
+                <i class="material-icons">search</i>
+            </button>
+            <button class="app-bar-action-btn" onclick="openExportModal()" title="Export Data">
+                <i class="material-icons">download</i>
+            </button>
+        </div>
         <div class="app-bar-controls">
             <div class="project-select-wrapper">
                 <select class="project-select" onchange="handleProjectSelectChange(this.value)">
@@ -229,26 +240,6 @@
         {% endfor %}
     </div>
 
-    <!-- FAB Buttons -->
-    <div class="fab-container">
-        <button class="fab small" onclick="openSearchModal()" title="Search">
-            <i class="material-icons">search</i>
-        </button>
-        <button class="fab small" onclick="openExportModal()" title="Export Data">
-            <i class="material-icons">download</i>
-        </button>
-        <button class="fab small" onclick="openNewItemModal()" title="New Item">
-            <i class="material-icons">add_task</i>
-        </button>
-        <button class="fab small" onclick="openUpdateModal()" title="New Update">
-            <i class="material-icons">add_comment</i>
-        </button>
-        <button class="fab" onclick="openTimelineDrawer()" title="Activity">
-            <i class="material-icons">timeline</i>
-        </button>
-    </div>
-
-    <!-- Activity Sidebar -->
     <aside class="timeline-drawer" id="timeline-drawer">
         <div class="drawer-header">
             <span class="drawer-title">Activity</span>

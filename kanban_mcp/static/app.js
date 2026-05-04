@@ -1518,13 +1518,31 @@ function handleProjectSelectChange(value) {
     if (value === '__create__') {
         // Reset the dropdown to its previous state
         document.querySelector('.project-select').value = '';
+        updateProjectActionsVisibility();
         // Open create project modal
         openCreateProjectModal();
     } else if (value) {
         // Navigate to selected project
         window.location.href = '/?project=' + value;
+    } else {
+        updateProjectActionsVisibility();
     }
 }
+
+function updateProjectActionsVisibility() {
+    const actions = document.getElementById('app-bar-actions');
+    const select = document.querySelector('.project-select');
+    if (!actions || !select) {
+        return;
+    }
+    if (select.value) {
+        actions.classList.remove('hidden');
+    } else {
+        actions.classList.add('hidden');
+    }
+}
+
+window.addEventListener('DOMContentLoaded', updateProjectActionsVisibility);
 
 // Open create project modal
 function openCreateProjectModal() {
