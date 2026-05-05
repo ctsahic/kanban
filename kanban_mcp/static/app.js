@@ -13,10 +13,6 @@
  *   - Drag-and-drop wrapper for status changes
  */
 
-// --- Tag Management State ---
-let projectTags = [];
-let activeTagFilters = [];
-let tagFilterMode = 'any';
 let currentEditItemId = null;
 
 // --- Epic Filter State ---
@@ -143,125 +139,18 @@ if (newItemCvFile) {
     newItemCvFile.addEventListener('change', updateNewItemFileLabel);
 }
 
-// Load project tags on page load
-async function loadProjectTags() {
-    if (!PROJECT_ID) return;
-    try {
-        const res = await fetch(`/api/tags?project=${PROJECT_ID}`);
-        const data = await res.json();
-        projectTags = data.tags || [];
-        renderTagPicker();
-    } catch (err) {
-        console.error('Failed to load tags', err);
-    }
-}
-
-// Render the tag picker with all project tags
-function renderTagPicker() {
-    const picker = document.getElementById('tag-picker');
-    const section = document.getElementById('tag-filter-section');
-    if (!picker || !section) return;
-
-    picker.replaceChildren();
-
-    if (projectTags.length === 0) {
-        section.style.display = 'none';
-        return;
-    }
-
-    section.style.display = 'flex';
-
-    projectTags.forEach(tag => {
-        const badge = document.createElement('span');
-        badge.className = 'tag-badge tag-picker-item';
-        if (activeTagFilters.includes(tag.name)) {
-            badge.classList.add('selected');
-        }
-        badge.dataset.tagName = tag.name;
-        badge.style.cssText = `--tag-color: ${tag.color};`;
-        badge.textContent = tag.name;
-        badge.onclick = () => toggleTagFilter(tag.name);
-        picker.appendChild(badge);
-    });
-
-    updateFilterBarVisibility();
-}
-
-// Toggle a tag in the active filter set
-function toggleTagFilter(tagName) {
-    const idx = activeTagFilters.indexOf(tagName);
-    if (idx >= 0) {
-        activeTagFilters.splice(idx, 1);
-    } else {
-        activeTagFilters.push(tagName);
-    }
-    applyTagFilters();
-}
-
-// Apply tag filters to cards
-function applyTagFilters() {
-    const cards = document.querySelectorAll('.card');
-
-    // Update tag picker selection state
-    document.querySelectorAll('.tag-picker-item').forEach(badge => {
-        badge.classList.toggle('selected', activeTagFilters.includes(badge.dataset.tagName));
-    });
-
-    // If no tag filters, show all cards (but respect other active filters)
-    if (activeTagFilters.length === 0) {
-        cards.forEach(card => card.style.display = '');
-        // Re-apply other filters if active
-        if (activeEpicFilter !== null) applyEpicFilter();
-        if (activeRelationshipFilter !== null) applyRelationshipFilter();
-        updateFilterBarVisibility();
-        return;
-    }
-
-    cards.forEach(card => {
-        const tagBadges = card.querySelectorAll('.tag-badge:not(.tag-picker-item)');
-        const itemTags = Array.from(tagBadges).map(b => b.dataset.tagName);
-
-        let matches = false;
-        if (tagFilterMode === 'any') {
-            matches = activeTagFilters.some(tag => itemTags.includes(tag));
-        } else {
-            matches = activeTagFilters.every(tag => itemTags.includes(tag));
-        }
-
-        card.style.display = matches ? '' : 'none';
-    });
-
-    updateFilterBarVisibility();
-}
-
 // Update filter bar visibility based on active filters
 function updateFilterBarVisibility() {
     const clearBtn = document.getElementById('clear-all-filters-btn');
-    const hasActiveFilters = activeTagFilters.length > 0 || activeEpicFilter !== null || activeRelationshipFilter !== null;
+    const hasActiveFilters = activeEpicFilter !== null || activeRelationshipFilter !== null;
 
     if (clearBtn) {
         clearBtn.style.display = hasActiveFilters ? '' : 'none';
     }
 }
 
-// Set filter mode (any/all)
-function setTagFilterMode(mode) {
-    tagFilterMode = mode;
-    document.querySelectorAll('.tag-filter-mode button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    applyTagFilters();
-}
-
-// Clear only tag filters
-function clearTagFilters() {
-    activeTagFilters = [];
-    applyTagFilters();
-}
-
-// Clear all filters (tags, epic, relationship)
+// Clear all filters (epic, relationship)
 function clearAllFilters() {
-    activeTagFilters = [];
     activeEpicFilter = null;
     activeRelationshipFilter = null;
 
@@ -269,7 +158,6 @@ function clearAllFilters() {
     document.querySelectorAll('.card').forEach(card => card.style.display = '');
 
     // Update UI
-    renderTagPicker();
     updateOtherFiltersUI();
     updateFilterBarVisibility();
 }
@@ -285,7 +173,7 @@ function applyEpicFilter() {
 
     if (activeEpicFilter === null) {
         // If no other filters, show all cards
-        if (activeTagFilters.length === 0 && activeRelationshipFilter === null) {
+        if (activeRelationshipFilter === null) {
             cards.forEach(card => card.style.display = '');
         }
         updateOtherFiltersUI();
@@ -306,10 +194,6 @@ function applyEpicFilter() {
 function clearEpicFilter() {
     activeEpicFilter = null;
     applyEpicFilter();
-    // Re-apply tag filters if any
-    if (activeTagFilters.length > 0) {
-        applyTagFilters();
-    }
 }
 
 // --- Relationship Filter Functions ---
@@ -330,7 +214,7 @@ function applyRelationshipFilter() {
     const cards = document.querySelectorAll('.card');
 
     if (activeRelationshipFilter === null) {
-        if (activeTagFilters.length === 0 && activeEpicFilter === null) {
+        if (activeEpicFilter === null) {
             cards.forEach(card => card.style.display = '');
         }
         updateOtherFiltersUI();
@@ -351,9 +235,7 @@ function applyRelationshipFilter() {
 function clearRelationshipFilter() {
     activeRelationshipFilter = null;
     applyRelationshipFilter();
-    if (activeTagFilters.length > 0) {
-        applyTagFilters();
-    } else if (activeEpicFilter !== null) {
+    if (activeEpicFilter !== null) {
         applyEpicFilter();
     }
 }
@@ -403,297 +285,6 @@ function updateOtherFiltersUI() {
         badge.appendChild(icon);
 
         activeDisplay.appendChild(badge);
-    }
-}
-
-// --- Tag Manager ---
-
-function openTagManager() {
-    openModal('tag-manager-modal');
-    renderTagManagerList();
-}
-
-function renderTagManagerList() {
-    const list = document.getElementById('tag-manager-list');
-    const empty = document.getElementById('tag-manager-empty');
-    if (!list) return;
-
-    list.replaceChildren();
-
-    if (projectTags.length === 0) {
-        empty.style.display = 'block';
-        return;
-    }
-    empty.style.display = 'none';
-
-    projectTags.forEach(tag => {
-        const row = document.createElement('div');
-        row.className = 'tag-manager-row';
-        row.dataset.tagId = tag.id;
-
-        // Color picker
-        const colorPicker = document.createElement('input');
-        colorPicker.type = 'color';
-        colorPicker.className = 'tag-color-picker';
-        colorPicker.value = tag.color;
-        colorPicker.title = 'Change color';
-        colorPicker.onchange = () => updateTagColor(tag.id, colorPicker.value);
-        row.appendChild(colorPicker);
-
-        // Tag name
-        const name = document.createElement('span');
-        name.className = 'tag-manager-name';
-        name.textContent = tag.name;
-        row.appendChild(name);
-
-        // Usage count
-        const count = document.createElement('span');
-        count.className = 'tag-manager-count';
-        count.textContent = `${tag.count || 0} items`;
-        row.appendChild(count);
-
-        // Delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'tag-manager-delete';
-        deleteBtn.title = 'מחק תג';
-        deleteBtn.onclick = () => confirmDeleteTag(tag.id, tag.name, tag.count || 0);
-        const deleteIcon = document.createElement('i');
-        deleteIcon.className = 'material-icons';
-        deleteIcon.textContent = 'delete';
-        deleteBtn.appendChild(deleteIcon);
-        row.appendChild(deleteBtn);
-
-        list.appendChild(row);
-    });
-}
-
-async function updateTagColor(tagId, newColor) {
-    try {
-        const res = await fetch(`/api/tags/${tagId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ color: newColor })
-        });
-        if (res.ok) {
-            // Update local state
-            const tag = projectTags.find(t => t.id === tagId);
-            if (tag) tag.color = newColor;
-            renderTagPicker();
-            showToast('צבע התג עודכן', 'success');
-        } else {
-            showToast('עדכון צבע התג נכשל', 'error');
-        }
-    } catch (err) {
-        console.error('Failed to update tag color:', err);
-        showToast('עדכון צבע התג נכשל', 'error');
-    }
-}
-
-function confirmDeleteTag(tagId, tagName, itemCount) {
-    const message = itemCount > 0
-        ? `להסיר את התג "${tagName}"? הוא יוסר מ-${itemCount} פריטים.`
-        : `להסיר את התג "${tagName}"?`;
-
-    if (confirm(message)) {
-        deleteTag(tagId);
-    }
-}
-
-async function deleteTag(tagId) {
-    try {
-        // Find tag name before deleting from local state
-        const deletedTag = projectTags.find(t => t.id === tagId);
-        const deletedTagName = deletedTag ? deletedTag.name : null;
-
-        const res = await fetch(`/api/tags/${tagId}`, { method: 'DELETE' });
-        if (res.ok) {
-            // Remove from local state
-            projectTags = projectTags.filter(t => t.id !== tagId);
-            activeTagFilters = activeTagFilters.filter(name => name !== deletedTagName);
-
-            // Remove tag badges from all cards
-            if (deletedTagName) {
-                document.querySelectorAll(`.card .tag-badge[data-tag-name="${deletedTagName}"]`).forEach(badge => {
-                    badge.remove();
-                });
-            }
-
-            renderTagManagerList();
-            renderTagPicker();
-            applyTagFilters();
-            showToast('תג נמחק', 'success');
-        } else {
-            showToast('מחיקת התג נכשלה', 'error');
-        }
-    } catch (err) {
-        console.error('Failed to delete tag:', err);
-        showToast('מחיקת התג נכשלה', 'error');
-    }
-}
-
-// --- Tag Input Autocomplete ---
-function setupTagInput(inputId, suggestionsId) {
-    const input = document.getElementById(inputId);
-    const suggestions = document.getElementById(suggestionsId);
-    if (!input || !suggestions) return;
-
-    input.addEventListener('input', () => {
-        const value = input.value.toLowerCase().trim();
-        if (!value) {
-            suggestions.classList.remove('show');
-            return;
-        }
-
-        const matches = projectTags.filter(t =>
-            t.name.includes(value) && !isTagOnItem(t.name)
-        );
-
-        suggestions.textContent = '';
-        if (matches.length === 0) {
-            const item = document.createElement('div');
-            item.className = 'tag-suggestion-item';
-            item.onclick = () => addTagToCurrentItem(value);
-            const span = document.createElement('span');
-            span.style.color = 'var(--text-medium-emphasis)';
-            span.textContent = 'צור תג חדש: ';
-            const strong = document.createElement('strong');
-            strong.textContent = value;
-            item.appendChild(span);
-            item.appendChild(strong);
-            suggestions.appendChild(item);
-        } else {
-            matches.forEach(tag => {
-                const item = document.createElement('div');
-                item.className = 'tag-suggestion-item';
-                item.onclick = () => addTagToCurrentItem(tag.name);
-                const preview = document.createElement('div');
-                preview.className = 'tag-color-preview';
-                preview.style.background = tag.color;
-                const name = document.createElement('span');
-                name.textContent = tag.name;
-                item.appendChild(preview);
-                item.appendChild(name);
-                suggestions.appendChild(item);
-            });
-        }
-        suggestions.classList.add('show');
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && input.value.trim()) {
-            e.preventDefault();
-            addTagToCurrentItem(input.value.trim());
-        }
-    });
-
-    // Close suggestions when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!input.contains(e.target) && !suggestions.contains(e.target)) {
-            suggestions.classList.remove('show');
-        }
-    });
-}
-
-// Check if tag is already on the current item being edited
-function isTagOnItem(tagName) {
-    const container = document.getElementById('edit-current-tags');
-    if (!container) return false;
-    const badges = container.querySelectorAll('.tag-badge');
-    return Array.from(badges).some(b => b.dataset.tagName === tagName);
-}
-
-// Add tag to current item being edited
-async function addTagToCurrentItem(tagName) {
-    if (!currentEditItemId || !tagName.trim()) return;
-
-    try {
-        const res = await fetch(`/api/items/${currentEditItemId}/tags`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ tags: [tagName.trim()] })
-        });
-        const result = await res.json();
-
-        if (!res.ok || !result.success) {
-            showToast(result.error || 'הוספת התג נכשלה', 'error');
-            return;
-        }
-
-        // Refresh project tags and item tags display
-        await loadProjectTags();
-        await loadItemTags(currentEditItemId);
-
-        // Clear input
-        const input = document.getElementById('edit-tags-input');
-        if (input) input.value = '';
-        document.getElementById('edit-tags-suggestions')?.classList.remove('show');
-
-        showToast('תג נוסף');
-    } catch (err) {
-        showToast('הוספת התג נכשלה', 'error');
-    }
-}
-
-// Remove tag from current item being edited
-async function removeTagFromCurrentItem(tagId) {
-    if (!currentEditItemId) return;
-
-    try {
-        const res = await fetch(`/api/items/${currentEditItemId}/tags/${tagId}`, {
-            method: 'DELETE'
-        });
-        const result = await res.json();
-
-        if (!res.ok || !result.success) {
-            showToast('הסרת התג נכשלה', 'error');
-            return;
-        }
-
-        await loadItemTags(currentEditItemId);
-        showToast('התג הוסר');
-    } catch (err) {
-        showToast('הסרת התג נכשלה', 'error');
-    }
-}
-
-// Load and display tags for an item in the edit modal
-async function loadItemTags(itemId) {
-    const container = document.getElementById('edit-current-tags');
-    if (!container) return;
-
-    try {
-        const res = await fetch(`/api/items/${itemId}/tags`);
-        const data = await res.json();
-        const tags = data.tags || [];
-
-        container.textContent = '';
-        if (tags.length === 0) {
-            const span = document.createElement('span');
-            span.style.cssText = 'color: var(--text-disabled); font-size: 12px;';
-            span.textContent = 'אין תגיות';
-            container.appendChild(span);
-        } else {
-            tags.forEach(tag => {
-                const badge = document.createElement('span');
-                badge.className = 'tag-badge';
-                badge.dataset.tagName = tag.name;
-                badge.style.cssText = `background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;`;
-                badge.textContent = tag.name + ' ';
-                const icon = document.createElement('i');
-                icon.className = 'material-icons';
-                icon.style.cssText = 'font-size:12px; cursor:pointer; margin-left:4px;';
-                icon.textContent = 'close';
-                icon.onclick = () => removeTagFromCurrentItem(tag.id);
-                badge.appendChild(icon);
-                container.appendChild(badge);
-            });
-        }
-    } catch (err) {
-        container.textContent = '';
-        const span = document.createElement('span');
-        span.style.color = 'var(--text-disabled)';
-        span.textContent = 'שגיאה בטעינת תגיות';
-        container.appendChild(span);
     }
 }
 
@@ -1174,7 +765,7 @@ async function removeDecision(decisionId) {
 
 // Initialize on page load
 if (typeof PROJECT_ID !== 'undefined' && PROJECT_ID) {
-    loadProjectTags();
+    // no tag loading needed
 }
 
 // --- Modal Functions ---
@@ -1230,18 +821,20 @@ async function openEditModal(itemId) {
         document.getElementById('edit-priority').value = item.priority;
         document.getElementById('edit-complexity').value = item.complexity || '';
         document.getElementById('edit-status').value = item.status;
-        document.getElementById('edit-type').value = item.type;
+        const editTypeInput = document.getElementById('edit-type');
+        if (editTypeInput) {
+            editTypeInput.value = item.type;
+        }
         updateEditItemModalFields(item.type);
-
-        // Load tags for this item
-        await loadItemTags(itemId);
-        setupTagInput('edit-tags-input', 'edit-tags-suggestions');
 
         // Load children for epics
         if (item.type === 'epic') {
             await loadItemChildren(itemId);
         } else {
-            document.getElementById('edit-children-section').style.display = 'none';
+            const editChildrenSection = document.getElementById('edit-children-section');
+            if (editChildrenSection) {
+                editChildrenSection.style.display = 'none';
+            }
         }
 
         // Load linked files
@@ -1593,7 +1186,6 @@ function openExportModal() {
     document.getElementById('export-format').value = 'json';
     document.getElementById('export-type').value = '';
     document.getElementById('export-status').value = '';
-    document.getElementById('export-tags').checked = true;
     document.getElementById('export-relationships').checked = false;
     document.getElementById('export-metrics').checked = false;
     document.getElementById('export-updates').checked = false;
@@ -1623,7 +1215,6 @@ async function doExport() {
     if (status) params.set('status', status);
 
     // Add include options
-    params.set('tags', document.getElementById('export-tags').checked);
     params.set('relationships', document.getElementById('export-relationships').checked);
     params.set('metrics', document.getElementById('export-metrics').checked);
     params.set('updates', document.getElementById('export-updates').checked);
@@ -1972,28 +1563,10 @@ function renderSemanticSearchResults(data, container) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         // State
-        getProjectTags: () => projectTags,
-        setProjectTags: (tags) => { projectTags = tags; },
-        getActiveTagFilters: () => activeTagFilters,
-        setActiveTagFilters: (filters) => { activeTagFilters = filters; },
-        getTagFilterMode: () => tagFilterMode,
-        setTagFilterMode,
         getCurrentEditItemId: () => currentEditItemId,
         setCurrentEditItemId: (id) => { currentEditItemId = id; },
         getActiveEpicFilter: () => activeEpicFilter,
         setActiveEpicFilter: (filter) => { activeEpicFilter = filter; },
-
-        // Tag management
-        loadProjectTags,
-        toggleTagFilter,
-        applyTagFilters,
-        updateFilterUI,
-        clearTagFilters,
-        setupTagInput,
-        isTagOnItem,
-        addTagToCurrentItem,
-        removeTagFromCurrentItem,
-        loadItemTags,
 
         // Epic/hierarchy
         loadEpicsForDropdown,

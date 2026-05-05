@@ -57,18 +57,6 @@
     {% if current_project %}
     <!-- Filter Bar -->
     <div class="filter-bar" id="filter-bar">
-        <!-- Tag Filter Section -->
-        <div class="filter-section" id="tag-filter-section" style="display: none;">
-            <span class="filter-label">תגיות:</span>
-            <div class="tag-picker" id="tag-picker"></div>
-            <div class="tag-filter-mode">
-                <button data-mode="any" class="active" onclick="setTagFilterMode('any')" title="הצג כרטיסים עם לפחות תג אחד שנבחר">אחד מה</button>
-                <button data-mode="all" onclick="setTagFilterMode('all')" title="הצג כרטיסים עם כל התגיות שנבחרו">הכל</button>
-            </div>
-            <button class="icon-btn-small" onclick="openTagManager()" title="ניהול תגיות">
-                <i class="material-icons">settings</i>
-            </button>
-        </div>
         <!-- Active Relationship/Epic Filters -->
         <div class="filter-section" id="other-filters" style="display: none;">
             <span class="filter-label">פעיל:</span>
@@ -112,18 +100,6 @@
                     </div>
                     <div class="card-title">{{ item.title }}</div>
 
-                    {% if item.tags %}
-                    <div class="tags-container">
-                        {% for tag in item.tags %}
-                        <span class="tag-badge"
-                              data-tag-name="{{ tag.name }}"
-                              style="background: {{ tag.color }}20; color: {{ tag.color }}; border: 1px solid {{ tag.color }}40;"
-                              onclick="event.stopPropagation(); toggleTagFilter(this.dataset.tagName)">
-                            {{ tag.name }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
 
                     {% if item.decision_count %}
                     <div class="card-decision-history" title="היסטוריית החלטות">
@@ -374,25 +350,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">סוג</label>
-                    <input type="text" class="form-input" id="edit-type" disabled style="opacity: 0.6;">
-                </div>
-                <div class="form-group" id="edit-children-section" style="display: none;">
-                    <label class="form-label">
-                        <i class="material-icons" style="font-size:14px; vertical-align:middle;">account_tree</i>
-                        Child Items
-                    </label>
-                    <div id="edit-children-list" class="children-list"></div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">הוסף תגיות (לחץ אנטר)</label>
-                    <div class="tag-input-wrapper">
-                        <input type="text" class="tag-input" id="edit-tags-input" placeholder="הוסף תגיות (לחץ אנטר)...">
-                        <div class="tag-suggestions" id="edit-tags-suggestions"></div>
-                    </div>
-                    <div class="tags-container" id="edit-current-tags" style="margin-top: 8px;"></div>
-                </div>
+                
                 <div class="form-group" id="edit-attachments-group" style="display: none;">
                     <label class="form-label">
                         <i class="material-icons" style="font-size:14px; vertical-align:middle;">description</i>
@@ -461,12 +419,7 @@
                     <label class="form-label">סוג</label>
                     <select class="form-select" id="newitem-type">
                         <option value="cv" selected>קורות חיים חדשים</option>
-                        <option value="issue">בעיה</option>
-                        <option value="feature">תכונה</option>
-                        <option value="epic">אפיק</option>
-                        <option value="todo">משימה</option>
-                        <option value="diary">יומן</option>
-                        <option value="question">שאלה</option>
+                       
                     </select>
                 </div>
                 <div class="form-group">
@@ -600,10 +553,6 @@
                     <label class="form-label">אפשרויות הכללה</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="export-tags" checked>
-                            <span>תגיות</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-relationships">
                             <span>קשרים</span>
                         </label>
@@ -640,25 +589,6 @@
         </div>
     </div>
 
-    <!-- Tag Manager Modal -->
-    <div class="modal-overlay" id="tag-manager-modal">
-        <div class="modal" style="max-width: 500px;">
-            <div class="modal-header">
-                <span class="modal-title">ניהול תגיות</span>
-                <button class="close-btn" onclick="closeModal('tag-manager-modal')">
-                    <i class="material-icons">close</i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="tag-manager-list" id="tag-manager-list">
-                    <!-- Tags will be populated here -->
-                </div>
-                <div class="tag-manager-empty" id="tag-manager-empty" style="display: none;">
-                    אין תגיות בפרויקט זה עדיין.
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Search Modal -->
     <div class="modal-overlay" id="search-modal">
