@@ -29,7 +29,7 @@ function isCvItemType(typeName) {
 }
 
 function getItemTypeLabel(typeName) {
-    return isCvItemType(typeName) ? 'New CV' : typeName;
+    return isCvItemType(typeName) ? 'קורות חיים' : typeName;
 }
 
 function updateNewItemModalFields() {
@@ -44,10 +44,10 @@ function updateNewItemModalFields() {
     const cvGroup = document.getElementById('newitem-cv-group');
 
     if (title) {
-        title.textContent = isCv ? 'New CV' : 'New Item';
+        title.textContent = isCv ? 'קורות חיים חדשים' : 'פריט חדש';
     }
     if (titleInput) {
-        titleInput.placeholder = isCv ? 'שם המועמד' : 'Enter title...';
+        titleInput.placeholder = isCv ? 'שם המועמד' : 'הזן כותרת...';
     }
     if (priorityGroup) {
         priorityGroup.style.display = isCv ? 'none' : '';
@@ -98,7 +98,7 @@ async function loadItemAttachments(itemId) {
         if (attachments.length === 0) {
             const emptySpan = document.createElement('span');
             emptySpan.style.color = 'var(--text-disabled)';
-            emptySpan.textContent = 'No CV uploaded';
+            emptySpan.textContent = 'לא הועלה קובץ קורות חיים';
             container.appendChild(emptySpan);
             return;
         }
@@ -128,7 +128,7 @@ async function loadItemAttachments(itemId) {
         container.textContent = '';
         const span = document.createElement('span');
         span.style.color = 'var(--md-sys-color-error)';
-        span.textContent = 'Error loading attachment';
+        span.textContent = 'שגיאה בטעינת קובץ';
         container.appendChild(span);
     }
 }
@@ -455,7 +455,7 @@ function renderTagManagerList() {
         // Delete button
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'tag-manager-delete';
-        deleteBtn.title = 'Delete tag';
+        deleteBtn.title = 'מחק תג';
         deleteBtn.onclick = () => confirmDeleteTag(tag.id, tag.name, tag.count || 0);
         const deleteIcon = document.createElement('i');
         deleteIcon.className = 'material-icons';
@@ -479,20 +479,20 @@ async function updateTagColor(tagId, newColor) {
             const tag = projectTags.find(t => t.id === tagId);
             if (tag) tag.color = newColor;
             renderTagPicker();
-            showToast('Tag color updated', 'success');
+            showToast('צבע התג עודכן', 'success');
         } else {
-            showToast('Failed to update tag color', 'error');
+            showToast('עדכון צבע התג נכשל', 'error');
         }
     } catch (err) {
         console.error('Failed to update tag color:', err);
-        showToast('Failed to update tag color', 'error');
+        showToast('עדכון צבע התג נכשל', 'error');
     }
 }
 
 function confirmDeleteTag(tagId, tagName, itemCount) {
     const message = itemCount > 0
-        ? `Delete tag "${tagName}"? It will be removed from ${itemCount} item${itemCount > 1 ? 's' : ''}.`
-        : `Delete tag "${tagName}"?`;
+        ? `להסיר את התג "${tagName}"? הוא יוסר מ-${itemCount} פריטים.`
+        : `להסיר את התג "${tagName}"?`;
 
     if (confirm(message)) {
         deleteTag(tagId);
@@ -521,13 +521,13 @@ async function deleteTag(tagId) {
             renderTagManagerList();
             renderTagPicker();
             applyTagFilters();
-            showToast('Tag deleted', 'success');
+            showToast('תג נמחק', 'success');
         } else {
-            showToast('Failed to delete tag', 'error');
+            showToast('מחיקת התג נכשלה', 'error');
         }
     } catch (err) {
         console.error('Failed to delete tag:', err);
-        showToast('Failed to delete tag', 'error');
+        showToast('מחיקת התג נכשלה', 'error');
     }
 }
 
@@ -555,7 +555,7 @@ function setupTagInput(inputId, suggestionsId) {
             item.onclick = () => addTagToCurrentItem(value);
             const span = document.createElement('span');
             span.style.color = 'var(--text-medium-emphasis)';
-            span.textContent = 'Create new tag: ';
+            span.textContent = 'צור תג חדש: ';
             const strong = document.createElement('strong');
             strong.textContent = value;
             item.appendChild(span);
@@ -615,7 +615,7 @@ async function addTagToCurrentItem(tagName) {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            showToast(result.error || 'Failed to add tag', 'error');
+            showToast(result.error || 'הוספת התג נכשלה', 'error');
             return;
         }
 
@@ -628,9 +628,9 @@ async function addTagToCurrentItem(tagName) {
         if (input) input.value = '';
         document.getElementById('edit-tags-suggestions')?.classList.remove('show');
 
-        showToast('Tag added');
+        showToast('תג נוסף');
     } catch (err) {
-        showToast('Failed to add tag', 'error');
+        showToast('הוספת התג נכשלה', 'error');
     }
 }
 
@@ -645,14 +645,14 @@ async function removeTagFromCurrentItem(tagId) {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            showToast('Failed to remove tag', 'error');
+            showToast('הסרת התג נכשלה', 'error');
             return;
         }
 
         await loadItemTags(currentEditItemId);
-        showToast('Tag removed');
+        showToast('התג הוסר');
     } catch (err) {
-        showToast('Failed to remove tag', 'error');
+        showToast('הסרת התג נכשלה', 'error');
     }
 }
 
@@ -670,7 +670,7 @@ async function loadItemTags(itemId) {
         if (tags.length === 0) {
             const span = document.createElement('span');
             span.style.cssText = 'color: var(--text-disabled); font-size: 12px;';
-            span.textContent = 'No tags';
+            span.textContent = 'אין תגיות';
             container.appendChild(span);
         } else {
             tags.forEach(tag => {
@@ -692,7 +692,7 @@ async function loadItemTags(itemId) {
         container.textContent = '';
         const span = document.createElement('span');
         span.style.color = 'var(--text-disabled)';
-        span.textContent = 'Error loading tags';
+        span.textContent = 'שגיאה בטעינת תגיות';
         container.appendChild(span);
     }
 }
@@ -832,7 +832,7 @@ async function loadItemFiles(itemId) {
                 e.stopPropagation();
                 const copyPath = lineNum ? `${fullPath}:${lineNum}` : fullPath;
                 navigator.clipboard.writeText(copyPath).then(() => {
-                    showToast('Path copied');
+                    showToast('נתיב הועתק');
                 });
             };
             const copyIcon = document.createElement('i');
@@ -863,7 +863,7 @@ async function loadItemFiles(itemId) {
         container.textContent = '';
         const span = document.createElement('span');
         span.style.color = 'var(--md-sys-color-error)';
-        span.textContent = 'Error loading files';
+        span.textContent = 'שגיאה בטעינת קבצים';
         container.appendChild(span);
     }
 }
@@ -900,7 +900,7 @@ async function addFileLink() {
 
     const filePath = pathInput.value.trim();
     if (!filePath) {
-        showToast('File path is required', 'error');
+        showToast('יש להזין נתיב קובץ', 'error');
         return;
     }
 
@@ -919,7 +919,7 @@ async function addFileLink() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to link file');
+            throw new Error(result.error || 'קישור הקובץ נכשל');
         }
 
         // Clear inputs
@@ -929,7 +929,7 @@ async function addFileLink() {
 
         // Reload file list
         await loadItemFiles(currentEditItemId);
-        showToast('File linked');
+        showToast('הקובץ קושר');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -952,12 +952,12 @@ async function removeFileLink(itemId, filePath, lineStart, lineEnd) {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to unlink file');
+            throw new Error(result.error || 'ניתוק הקובץ נכשל');
         }
 
         // Reload file list
         await loadItemFiles(itemId);
-        showToast('File unlinked');
+        showToast('הקובץ נותק');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -980,7 +980,7 @@ async function loadItemDecisions(itemId) {
         if (decisions.length === 0) {
             const emptySpan = document.createElement('span');
             emptySpan.style.color = 'var(--text-disabled)';
-            emptySpan.textContent = 'No decisions recorded';
+            emptySpan.textContent = 'לא הוקלטו החלטות';
             container.appendChild(emptySpan);
             return;
         }
@@ -1055,7 +1055,7 @@ async function loadItemDecisions(itemId) {
         container.textContent = '';
         const span = document.createElement('span');
         span.style.color = 'var(--md-sys-color-error)';
-        span.textContent = 'Error loading decisions';
+        span.textContent = 'שגיאה בטעינת החלטות';
         container.appendChild(span);
     }
 }
@@ -1067,13 +1067,13 @@ async function addDecision() {
     const choiceInput = document.getElementById('add-decision-choice');
     const selectedStatus = document.getElementById('edit-status')?.value || '';
     if (!selectedStatus) {
-        showToast('Status is required', 'error');
+        showToast('דרוש סטטוס', 'error');
         return;
     }
 
     const choice = choiceInput.value.trim();
     const currentStatus = document.getElementById('edit-status')?.value || '';
-    const statusRationale = `Status: ${selectedStatus}`;
+    const statusRationale = `סטטוס: ${selectedStatus}`;
 
     try {
         let result;
@@ -1083,13 +1083,13 @@ async function addDecision() {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    choice: choice || `Decision: ${selectedStatus}`,
+                    choice: choice || `החלטה: ${selectedStatus}`,
                     rationale: statusRationale,
                 })
             });
             result = await res.json();
             if (!res.ok || !result.success) {
-                throw new Error(result.error || 'Failed to save decision');
+                throw new Error(result.error || 'שמירת ההחלטה נכשלה');
             }
         } else {
             const res = await fetch(`/api/items/${currentEditItemId}/status`, {
@@ -1104,7 +1104,7 @@ async function addDecision() {
             });
             result = await res.json();
             if (!res.ok || !result.success) {
-                throw new Error(result.message || result.error || 'Failed to save decision');
+                throw new Error(result.message || result.error || 'שמירת ההחלטה נכשלה');
             }
         }
 
@@ -1121,7 +1121,7 @@ async function addDecision() {
 
         // Reload decisions list
         await loadItemDecisions(currentEditItemId);
-        showToast('Decision recorded');
+        showToast('ההחלטה נשמרה');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -1159,14 +1159,14 @@ async function removeDecision(decisionId) {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to delete decision');
+            throw new Error(result.error || 'מחיקת ההחלטה נכשלה');
         }
 
         // Reload decisions list
         if (currentEditItemId) {
             await loadItemDecisions(currentEditItemId);
         }
-        showToast('Decision deleted');
+        showToast('ההחלטה נמחקה');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -1220,7 +1220,7 @@ async function openEditModal(itemId) {
     currentEditItemId = itemId;
     try {
         const res = await fetch(`/api/items/${itemId}`);
-        if (!res.ok) throw new Error('Failed to load item');
+        if (!res.ok) throw new Error('טעינת הפריט נכשלה');
         const item = await res.json();
 
         document.getElementById('edit-id').value = item.id;
@@ -1232,9 +1232,6 @@ async function openEditModal(itemId) {
         document.getElementById('edit-status').value = item.status;
         document.getElementById('edit-type').value = item.type;
         updateEditItemModalFields(item.type);
-
-        // Load parent dropdown (exclude current item to prevent circular reference)
-        await loadEpicsForDropdown('edit-parent', item.parent_id, itemId);
 
         // Load tags for this item
         await loadItemTags(itemId);
@@ -1266,7 +1263,6 @@ async function openEditModal(itemId) {
 async function saveItem() {
     const itemId = document.getElementById('edit-id').value;
     const complexityVal = document.getElementById('edit-complexity').value;
-    const parentVal = document.getElementById('edit-parent').value;
     const decisionChoiceVal = document.getElementById('add-decision-choice').value.trim();
     const data = {
         title: document.getElementById('edit-title').value,
@@ -1274,7 +1270,6 @@ async function saveItem() {
         priority: parseInt(document.getElementById('edit-priority').value),
         complexity: complexityVal ? parseInt(complexityVal) : null,
         status: document.getElementById('edit-status').value,
-        parent_id: parentVal ? parseInt(parentVal) : null,
         decision_choice: decisionChoiceVal || null
     };
 
@@ -1287,13 +1282,13 @@ async function saveItem() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.message || result.error || 'Failed to save');
+            throw new Error(result.message || result.error || 'שמירת הפריט נכשלה');
         }
 
         document.getElementById('add-decision-choice').value = '';
 
         closeModal('edit-modal');
-        showToast('Item updated');
+        showToast('הפריט עודכן');
         setTimeout(() => location.reload(), 500);
     } catch (err) {
         showToast(err.message, 'error');
@@ -1305,7 +1300,7 @@ async function saveItem() {
 function confirmDeleteItem() {
     const itemId = document.getElementById('edit-id').value;
     const title = document.getElementById('edit-title').value;
-    if (confirm(`Delete item #${itemId} "${title}"? This cannot be undone.`)) {
+    if (confirm(`למחוק את הפריט #${itemId} "${title}"? פעולה זו אינה ניתנת לביטול.`)) {
         deleteItem(itemId);
     }
 }
@@ -1315,10 +1310,10 @@ async function deleteItem(itemId) {
         const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE' });
         const result = await res.json();
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to delete item');
+            throw new Error(result.error || 'מחיקת הפריט נכשלה');
         }
         closeModal('edit-modal');
-        showToast('Item deleted');
+        showToast('הפריט נמחק');
         // Remove the card from the board
         const card = document.querySelector(`.card[data-item-id="${itemId}"]`);
         if (card) card.remove();
@@ -1353,7 +1348,7 @@ async function openUpdateModal(preselectedItemId = null) {
 async function createUpdate() {
     const content = document.getElementById('update-content').value.trim();
     if (!content) {
-        showToast('Content is required', 'error');
+        showToast('יש להזין תוכן', 'error');
         return;
     }
 
@@ -1373,11 +1368,11 @@ async function createUpdate() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to create update');
+            throw new Error(result.error || 'יצירת העדכון נכשלה');
         }
 
         closeModal('update-modal');
-        showToast('Update created');
+        showToast('העדכון נוצר');
         setTimeout(() => location.reload(), 500);
     } catch (err) {
         showToast(err.message, 'error');
@@ -1417,21 +1412,19 @@ async function openNewItemModal() {
     document.getElementById('newitem-type').value = CV_ITEM_TYPE;
     document.getElementById('newitem-priority').value = '3';
     document.getElementById('newitem-complexity').value = '';
-    document.getElementById('newitem-parent').value = '';
     const fileInput = document.getElementById('newitem-cv-file');
     if (fileInput) {
         fileInput.value = '';
     }
     updateNewItemFileLabel();
     updateNewItemModalFields();
-    await loadEpicsForDropdown('newitem-parent');
     openModal('newitem-modal');
 }
 
 async function createItem() {
     const title = document.getElementById('newitem-title').value.trim();
     if (!title) {
-        showToast('Title is required', 'error');
+        showToast('יש להזין כותרת', 'error');
         return;
     }
 
@@ -1441,12 +1434,11 @@ async function createItem() {
     const cvFile = fileInput && fileInput.files.length > 0 ? fileInput.files[0] : null;
 
     if (isCv && !cvFile) {
-        showToast('CV file is required', 'error');
+        showToast('יש לבחור קובץ קורות חיים', 'error');
         return;
     }
 
     const complexityVal = document.getElementById('newitem-complexity').value;
-    const parentVal = document.getElementById('newitem-parent').value;
     const formData = new FormData();
     formData.append('project_id', PROJECT_ID);
     formData.append('type', itemType);
@@ -1458,10 +1450,6 @@ async function createItem() {
         if (complexityVal) {
             formData.append('complexity', complexityVal);
         }
-    }
-
-    if (parentVal) {
-        formData.append('parent_id', parentVal);
     }
 
     if (cvFile) {
@@ -1476,11 +1464,11 @@ async function createItem() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to create item');
+            throw new Error(result.error || 'יצירת הפריט נכשלה');
         }
 
         closeModal('newitem-modal');
-        showToast('Item created');
+        showToast('הפריט נוצר');
         setTimeout(() => location.reload(), 500);
     } catch (err) {
         showToast(err.message, 'error');
@@ -1502,11 +1490,11 @@ async function deleteProject() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to delete project');
+            throw new Error(result.error || 'מחיקת הפרויקט נכשלה');
         }
 
         closeModal('delete-modal');
-        showToast('Project deleted');
+        showToast('הפרויקט נמחק');
         setTimeout(() => window.location.href = '/', 500);
     } catch (err) {
         showToast(err.message, 'error');
@@ -1555,7 +1543,7 @@ async function createProject() {
     const projectName = document.getElementById('new-project-name').value.trim();
 
     if (!projectName) {
-        showToast('Project name is required', 'error');
+        showToast('יש להזין שם פרויקט', 'error');
         return;
     }
 
@@ -1573,11 +1561,11 @@ async function createProject() {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            throw new Error(result.error || 'Failed to create project');
+            throw new Error(result.error || 'יצירת הפרויקט נכשלה');
         }
 
         closeModal('create-project-modal');
-        showToast('Project created successfully');
+        showToast('הפרויקט נוצר בהצלחה');
         // Navigate to the new project
         setTimeout(() => window.location.href = '/?project=' + result.project_id, 500);
     } catch (err) {
@@ -1617,7 +1605,7 @@ function openExportModal() {
 
 async function doExport() {
     if (!PROJECT_ID) {
-        showToast('No project selected', 'error');
+        showToast('לא נבחר פרויקט', 'error');
         return;
     }
 
@@ -1653,7 +1641,7 @@ async function doExport() {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Export failed');
+            throw new Error(error.error || 'הייצוא נכשל');
         }
 
         // Get filename from Content-Disposition header
@@ -1676,7 +1664,7 @@ async function doExport() {
         window.URL.revokeObjectURL(downloadUrl);
 
         closeModal('export-modal');
-        showToast('Export downloaded');
+        showToast('הייצוא הורד');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -1702,7 +1690,7 @@ async function doSearch() {
     }
 
     if (!PROJECT_ID) {
-        showToast('No project selected', 'error');
+        showToast('לא נבחר פרויקט', 'error');
         return;
     }
 
@@ -1715,7 +1703,7 @@ async function doSearch() {
             data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Semantic search failed');
+                throw new Error(data.error || 'החיפוש הסמנטי נכשל');
             }
 
             renderSemanticSearchResults(data, resultsDiv);
@@ -1725,7 +1713,7 @@ async function doSearch() {
             data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Search failed');
+                throw new Error(data.error || 'החיפוש נכשל');
             }
 
             renderSearchResults(data, resultsDiv);
@@ -1741,7 +1729,7 @@ function renderSearchResults(data, container) {
     if (data.total_count === 0) {
         const empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.textContent = 'No results found';
+        empty.textContent = 'לא נמצאו תוצאות';
         container.appendChild(empty);
         return;
     }
@@ -1753,7 +1741,7 @@ function renderSearchResults(data, container) {
 
         const header = document.createElement('div');
         header.className = 'search-section-header';
-        header.textContent = `Items (${data.items.length})`;
+        header.textContent = `פריטים (${data.items.length})`;
         section.appendChild(header);
 
         data.items.forEach(item => {
@@ -1804,7 +1792,7 @@ function renderSearchResults(data, container) {
 
         const header = document.createElement('div');
         header.className = 'search-section-header';
-        header.textContent = `Updates (${data.updates.length})`;
+        header.textContent = `עדכונים (${data.updates.length})`;
         section.appendChild(header);
 
         data.updates.forEach(update => {
@@ -1834,7 +1822,7 @@ function renderSemanticSearchResults(data, container) {
     if (!data.results || data.results.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.textContent = 'No semantic matches found';
+        empty.textContent = 'לא נמצאו התאמות סמנטיות';
         container.appendChild(empty);
         return;
     }
@@ -1851,7 +1839,7 @@ function renderSemanticSearchResults(data, container) {
 
         const header = document.createElement('div');
         header.className = 'search-section-header';
-        header.textContent = `Items (${items.length})`;
+        header.textContent = `פריטים (${items.length})`;
         section.appendChild(header);
 
         items.forEach(item => {
@@ -1876,7 +1864,7 @@ function renderSemanticSearchResults(data, container) {
             const simBadge = document.createElement('span');
             simBadge.className = 'search-result-similarity';
             simBadge.textContent = Math.round(item.similarity * 100) + '%';
-            simBadge.title = 'Semantic similarity';
+            simBadge.title = 'דמיון סמנטי';
             row.appendChild(simBadge);
 
             if (item.type_name) {
@@ -1913,7 +1901,7 @@ function renderSemanticSearchResults(data, container) {
 
         const header = document.createElement('div');
         header.className = 'search-section-header';
-        header.textContent = `Decisions (${decisions.length})`;
+        header.textContent = `החלטות (${decisions.length})`;
         section.appendChild(header);
 
         decisions.forEach(decision => {
@@ -1954,7 +1942,7 @@ function renderSemanticSearchResults(data, container) {
 
         const header = document.createElement('div');
         header.className = 'search-section-header';
-        header.textContent = `Updates (${updates.length})`;
+        header.textContent = `עדכונים (${updates.length})`;
         section.appendChild(header);
 
         updates.forEach(update => {
@@ -1963,7 +1951,7 @@ function renderSemanticSearchResults(data, container) {
 
             const meta = document.createElement('div');
             meta.className = 'search-result-meta';
-            const simText = Math.round(update.similarity * 100) + '% match';
+            const simText = Math.round(update.similarity * 100) + '% התאמה';
             const dateText = update.created_at ? new Date(update.created_at).toLocaleString() : '';
             meta.textContent = dateText ? `${simText} • ${dateText}` : simText;
             row.appendChild(meta);

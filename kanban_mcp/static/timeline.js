@@ -91,7 +91,7 @@ function switchTimelineView(view) {
  */
 async function loadProjectTimeline() {
     if (!PROJECT_ID) {
-        showTimelineEmpty('Select a project first');
+        showTimelineEmpty('בחר פרויקט קודם כל');
         return;
     }
 
@@ -105,11 +105,11 @@ async function loadProjectTimeline() {
             timelineData = data.entries || [];
             renderTimeline(timelineData);
         } else {
-            showTimelineEmpty(data.error || 'Failed to load timeline');
+            showTimelineEmpty(data.error || 'טעינת ציר הזמן נכשלה');
         }
     } catch (error) {
         console.error('Failed to load project timeline:', error);
-        showTimelineEmpty('Error loading timeline');
+        showTimelineEmpty('שגיאה בטעינת ציר הזמן');
     } finally {
         showTimelineLoading(false);
     }
@@ -130,11 +130,11 @@ async function loadItemTimeline(itemId) {
             timelineData = data.entries || [];
             renderTimeline(timelineData);
         } else {
-            showTimelineEmpty(data.error || 'Failed to load timeline');
+            showTimelineEmpty(data.error || 'טעינת ציר הזמן נכשלה');
         }
     } catch (error) {
         console.error('Failed to load item timeline:', error);
-        showTimelineEmpty('Error loading timeline');
+        showTimelineEmpty('שגיאה בטעינת ציר הזמן');
     } finally {
         showTimelineLoading(false);
     }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanban Board</title>
+    <title>לוח מועמדים</title>
     <!-- Fonts and Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -13,40 +13,41 @@
     <header class="app-bar">
         <div class="app-title">
             <i class="material-icons">view_kanban</i>
-            Kanban Board
+            לוח מועמדים
         </div>
         <div id="app-bar-actions" class="app-bar-actions{% if not current_project %} hidden{% endif %}">
-            <button class="app-bar-action-btn" onclick="openNewItemModal()" title="New Item">
+            <button class="app-bar-action-btn" onclick="openNewItemModal()" title="פריט חדש">
                 <i class="material-icons">add</i>
             </button>
-            <button class="app-bar-action-btn" onclick="openSearchModal()" title="Search">
+            <button class="app-bar-action-btn" onclick="openSearchModal()" title="חפש">
                 <i class="material-icons">search</i>
             </button>
-            <button class="app-bar-action-btn" onclick="openExportModal()" title="Export Data">
+            <button class="app-bar-action-btn" onclick="openExportModal()" title="ייצוא נתונים">
                 <i class="material-icons">download</i>
             </button>
         </div>
         <div class="app-bar-controls">
             <div class="project-select-wrapper">
                 <select class="project-select" onchange="handleProjectSelectChange(this.value)">
-                    <option value="">Select project...</option>
+                    <option value="">בחר פרויקט...</option>
                     {% for p in projects %}
                     <option value="{{ p.id }}" {% if p.id == current_project %}selected{% endif %}>{{ p.name }}</option>
                     {% endfor %}
-                    <option value="__create__">+ Create New Project</option>
+                    <option value="__create__">+ צור פרויקט חדש</option>
                 </select>
                 <i class="material-icons select-arrow">arrow_drop_down</i>
             </div>
             {% if user %}
             <div class="user-info">
-                <span>Logged in as {{ user }}</span>
-                <button class="logout-btn" onclick="window.location.href='{{ url_for('logout') }}'" title="Logout">
+                <span class="user-info-label">מחובר כ</span>
+                <span class="user-info-name" dir="auto">{{ user }}</span>
+                <button class="logout-btn" onclick="window.location.href='{{ url_for('logout') }}'" title="התנתק">
                     <i class="material-icons">logout</i>
                 </button>
             </div>
             {% endif %}
             {% if current_project %}
-            <button class="delete-project-btn" onclick="confirmDeleteProject('{{ current_project }}', '{{ projects|selectattr('id', 'equalto', current_project)|map(attribute='name')|first|default('Unknown Project') }}')" title="Delete project">
+            <button class="delete-project-btn" onclick="confirmDeleteProject('{{ current_project }}', '{{ projects|selectattr('id', 'equalto', current_project)|map(attribute='name')|first|default('פרויקט לא ידוע') }}')" title="מחק פרויקט">
                 <i class="material-icons">delete</i>
             </button>
             {% endif %}
@@ -58,22 +59,22 @@
     <div class="filter-bar" id="filter-bar">
         <!-- Tag Filter Section -->
         <div class="filter-section" id="tag-filter-section" style="display: none;">
-            <span class="filter-label">Tags:</span>
+            <span class="filter-label">תגיות:</span>
             <div class="tag-picker" id="tag-picker"></div>
             <div class="tag-filter-mode">
-                <button data-mode="any" class="active" onclick="setTagFilterMode('any')" title="Show cards with ANY selected tag">ANY</button>
-                <button data-mode="all" onclick="setTagFilterMode('all')" title="Show cards with ALL selected tags">ALL</button>
+                <button data-mode="any" class="active" onclick="setTagFilterMode('any')" title="הצג כרטיסים עם לפחות תג אחד שנבחר">אחד מה</button>
+                <button data-mode="all" onclick="setTagFilterMode('all')" title="הצג כרטיסים עם כל התגיות שנבחרו">הכל</button>
             </div>
-            <button class="icon-btn-small" onclick="openTagManager()" title="Manage Tags">
+            <button class="icon-btn-small" onclick="openTagManager()" title="ניהול תגיות">
                 <i class="material-icons">settings</i>
             </button>
         </div>
         <!-- Active Relationship/Epic Filters -->
         <div class="filter-section" id="other-filters" style="display: none;">
-            <span class="filter-label">Active:</span>
+            <span class="filter-label">פעיל:</span>
             <div class="active-filters" id="active-filters"></div>
         </div>
-        <button class="clear-filters-btn" id="clear-all-filters-btn" onclick="clearAllFilters()" style="display: none;">Clear All</button>
+        <button class="clear-filters-btn" id="clear-all-filters-btn" onclick="clearAllFilters()" style="display: none;">נקה הכל</button>
     </div>
 
     <div class="board-container">
@@ -125,10 +126,10 @@
                     {% endif %}
 
                     {% if item.decision_count %}
-                    <div class="card-decision-history" title="Decision History">
+                    <div class="card-decision-history" title="היסטוריית החלטות">
                         <div class="card-decision-label">
                             <i class="material-icons" style="font-size:13px;">history</i>
-                            Decision History ({{ item.decision_count }})
+                            היסטוריית החלטות ({{ item.decision_count }})
                         </div>
                         {% if item.last_decision %}
                         <div class="card-decision-text">{{ item.last_decision }}</div>
@@ -138,7 +139,7 @@
 
                     {% if item.type == 'epic' and epic_progress.get(item.id) %}
                     {% set prog = epic_progress[item.id] %}
-                    <div class="epic-progress" onclick="event.stopPropagation(); filterByEpic({{ item.id }})" style="cursor: pointer;" title="Click to show children">
+                    <div class="epic-progress" onclick="event.stopPropagation(); filterByEpic({{ item.id }})" style="cursor: pointer;" title="לחץ כדי להציג תתי פריטים">
                         <span class="badge badge-epic">
                             <i class="material-icons">account_tree</i>
                             {{ prog.completed }}/{{ prog.total }}
@@ -153,7 +154,7 @@
                     <div class="badges-container">
                         <span class="badge badge-parent"
                               style="cursor: pointer;"
-                              title="Click to view parent epic"
+                              title="לחץ כדי להציג את האפיק האב"
                               onclick="event.stopPropagation(); openEditModal({{ item.parent_id }})">
                             <i class="material-icons">subdirectory_arrow_right</i>
                             Part of: #{{ item.parent_id }}
@@ -165,44 +166,44 @@
                     <div class="badges-container">
                         {% if rels.get('blocked_by') %}
                         <span class="badge badge-blocked-by clickable-badge"
-                              title="Blocked by: {% for r in rels.blocked_by %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (click to filter)"
+                              title="חסום על ידי: {% for r in rels.blocked_by %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (לחץ לסינון)"
                               onclick="event.stopPropagation(); filterByRelationship({{ item.id }}, [{% for r in rels.blocked_by %}{{ r.id }}{% if not loop.last %}, {% endif %}{% endfor %}], 'blocked by')">
-                            <i class="material-icons">block</i> Blocked by {{ rels.blocked_by|length }}
+                            <i class="material-icons">block</i> חסום על ידי {{ rels.blocked_by|length }}
                         </span>
                         {% endif %}
                         {% if rels.get('blocks') %}
                         <span class="badge badge-blocks clickable-badge"
-                              title="Blocks: {% for r in rels.blocks %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (click to filter)"
+                              title="חוסם: {% for r in rels.blocks %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (לחץ לסינון)"
                               onclick="event.stopPropagation(); filterByRelationship({{ item.id }}, [{% for r in rels.blocks %}{{ r.id }}{% if not loop.last %}, {% endif %}{% endfor %}], 'blocks')">
-                            <i class="material-icons">remove_circle_outline</i> Blocks {{ rels.blocks|length }}
+                            <i class="material-icons">remove_circle_outline</i> חוסם {{ rels.blocks|length }}
                         </span>
                         {% endif %}
                         {% if rels.get('depends_on') %}
                         <span class="badge badge-depends-on clickable-badge"
-                              title="Depends on: {% for r in rels.depends_on %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (click to filter)"
+                              title="תלוי ב: {% for r in rels.depends_on %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (לחץ לסינון)"
                               onclick="event.stopPropagation(); filterByRelationship({{ item.id }}, [{% for r in rels.depends_on %}{{ r.id }}{% if not loop.last %}, {% endif %}{% endfor %}], 'depends on')">
-                            <i class="material-icons">hourglass_empty</i> Depends {{ rels.depends_on|length }}
+                            <i class="material-icons">hourglass_empty</i> תלוי ב {{ rels.depends_on|length }}
                         </span>
                         {% endif %}
                         {% if rels.get('dependency_of') %}
                         <span class="badge badge-dependency-of clickable-badge"
-                              title="Dependency of: {% for r in rels.dependency_of %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (click to filter)"
+                              title="תלוי בו: {% for r in rels.dependency_of %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (לחץ לסינון)"
                               onclick="event.stopPropagation(); filterByRelationship({{ item.id }}, [{% for r in rels.dependency_of %}{{ r.id }}{% if not loop.last %}, {% endif %}{% endfor %}], 'dependency of')">
-                            <i class="material-icons">push_pin</i> Dep of {{ rels.dependency_of|length }}
+                            <i class="material-icons">push_pin</i> תלוי בו {{ rels.dependency_of|length }}
                         </span>
                         {% endif %}
                         {% if rels.get('relates_to') %}
                         <span class="badge badge-relates clickable-badge"
-                              title="Related: {% for r in rels.relates_to %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (click to filter)"
+                              title="קשור ל: {% for r in rels.relates_to %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (לחץ לסינון)"
                               onclick="event.stopPropagation(); filterByRelationship({{ item.id }}, [{% for r in rels.relates_to %}{{ r.id }}{% if not loop.last %}, {% endif %}{% endfor %}], 'relates to')">
-                            <i class="material-icons">link</i> Relates {{ rels.relates_to|length }}
+                            <i class="material-icons">link</i> קשור {{ rels.relates_to|length }}
                         </span>
                         {% endif %}
                         {% if rels.get('duplicates') %}
                         <span class="badge badge-duplicates clickable-badge"
-                              title="Duplicates: {% for r in rels.duplicates %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (click to filter)"
+                              title="כפולים: {% for r in rels.duplicates %}#{{ r.id }} {{ r.title }}{% if not loop.last %}, {% endif %}{% endfor %} (לחץ לסינון)"
                               onclick="event.stopPropagation(); filterByRelationship({{ item.id }}, [{% for r in rels.duplicates %}{{ r.id }}{% if not loop.last %}, {% endif %}{% endfor %}], 'duplicates')">
-                            <i class="material-icons">content_copy</i> Dupes {{ rels.duplicates|length }}
+                            <i class="material-icons">content_copy</i> כפילות {{ rels.duplicates|length }}
                         </span>
                         {% endif %}
                     </div>
@@ -225,15 +226,15 @@
                             {% elif item.type == 'cv' %}
                             <i class="material-icons" style="font-size:14px; margin-right:4px;">description</i>
                             {% endif %}
-                            {% if item.type == 'cv' %}New CV{% else %}{{ item.type }}{% endif %}
+                            {% if item.type == 'cv' %}קורות חיים{% else %}{{ item.type }}{% endif %}
                         </span>
-                        <button class="card-action" onclick="event.stopPropagation(); openUpdateModal({{ item.id }})" title="Add update">
+                        <button class="card-action" onclick="event.stopPropagation(); openUpdateModal({{ item.id }})" title="הוסף עדכון">
                             <i class="material-icons">add_comment</i>
                         </button>
                     </div>
                 </div>
                 {% else %}
-                <div class="empty-state">No items</div>
+                <div class="empty-state">אין פריטים</div>
                 {% endfor %}
             </div>
         </div>
@@ -242,7 +243,7 @@
 
     <aside class="timeline-drawer" id="timeline-drawer">
         <div class="drawer-header">
-            <span class="drawer-title">Activity</span>
+            <span class="drawer-title">פעילות</span>
             <button class="close-btn" onclick="closeTimelineDrawer()">
                 <i class="material-icons">close</i>
             </button>
@@ -250,73 +251,73 @@
         <div class="timeline-toggle-bar">
             <button class="timeline-toggle-btn active" data-view="project" onclick="switchTimelineView('project')">
                 <i class="material-icons">folder</i>
-                Project
+                פרויקט
             </button>
             <button class="timeline-toggle-btn" data-view="item" onclick="switchTimelineView('item')" id="timeline-item-btn" disabled>
                 <i class="material-icons">description</i>
-                <span id="timeline-item-label">Item</span>
+                <span id="timeline-item-label">פריט</span>
             </button>
         </div>
         <div class="timeline-filter-bar">
             <label class="timeline-filter-checkbox">
                 <input type="checkbox" checked data-filter="status_change" onchange="filterTimelineByType()">
                 <span class="filter-dot status-change"></span>
-                Status
+                סטטוס
             </label>
             <label class="timeline-filter-checkbox">
                 <input type="checkbox" checked data-filter="decision" onchange="filterTimelineByType()">
                 <span class="filter-dot decision"></span>
-                Decisions
+                החלטות
             </label>
             <label class="timeline-filter-checkbox">
                 <input type="checkbox" checked data-filter="update" onchange="filterTimelineByType()">
                 <span class="filter-dot update"></span>
-                Updates
+                עדכונים
             </label>
             <label class="timeline-filter-checkbox">
                 <input type="checkbox" checked data-filter="commit" onchange="filterTimelineByType()">
                 <span class="filter-dot commit"></span>
-                Commits
+                קאמיטים
             </label>
         </div>
         <div class="activity-new-update" id="activity-new-update" style="display: none;">
             <div class="activity-new-update-form">
-                <textarea id="activity-update-content" class="form-textarea" placeholder="Write an update..." rows="3"></textarea>
+                <textarea id="activity-update-content" class="form-textarea" placeholder="כתוב עדכון..." rows="3"></textarea>
                 <div class="activity-update-controls">
-                    <select id="activity-update-items" class="form-input" multiple title="Link to items (optional)">
+                    <select id="activity-update-items" class="form-input" multiple title="קשר לפריטים (אופציונלי)">
                     </select>
                     <div class="activity-update-actions">
-                        <button class="btn btn-text" onclick="toggleActivityNewUpdate()">Cancel</button>
-                        <button class="btn btn-primary" onclick="createActivityUpdate()">Post</button>
+                        <button class="btn btn-text" onclick="toggleActivityNewUpdate()">ביטול</button>
+                        <button class="btn btn-primary" onclick="createActivityUpdate()">פרסם</button>
                     </div>
                 </div>
             </div>
         </div>
         <div class="activity-new-update-toggle">
-            <button class="btn btn-text" onclick="toggleActivityNewUpdate()" title="Write an update">
+            <button class="btn btn-text" onclick="toggleActivityNewUpdate()" title="כתוב עדכון">
                 <i class="material-icons">add_comment</i>
-                New Update
+                עדכון חדש
             </button>
         </div>
         <div class="search-input-wrapper">
             <i class="material-icons">search</i>
-            <input type="text" class="search-input" id="activity-search" placeholder="Search activity..." oninput="filterActivityEntries(this.value)">
+            <input type="text" class="search-input" id="activity-search" placeholder="חפש פעילות..." oninput="filterActivityEntries(this.value)">
         </div>
         <div class="drawer-content" id="timeline-content">
             <div class="timeline-loading" id="timeline-loading" style="display: none;">
                 <i class="material-icons spin">sync</i>
-                Loading timeline...
+                טוען ציר זמן...
             </div>
             <div class="timeline-entries" id="timeline-entries"></div>
             <div class="empty-state" id="timeline-empty" style="display: none;">
-                No activity yet
+                עדיין אין פעילות
             </div>
         </div>
     </aside>
     {% else %}
     <div class="empty-state" style="margin-top: 50px;">
         <i class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">dashboard</i><br>
-        Select a project to view its board
+        בחר פרויקט כדי לצפות בלוח
     </div>
     {% endif %}
 
@@ -324,9 +325,9 @@
     <div class="modal-overlay" id="edit-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">Edit Item <span id="edit-item-id"></span></span>
+                <span class="modal-title">ערוך פריט <span id="edit-item-id"></span></span>
                 <div class="modal-header-actions">
-                    <button class="icon-btn" onclick="openItemTimeline(parseInt(document.getElementById('edit-id').value))" title="View Timeline">
+                    <button class="icon-btn" onclick="openItemTimeline(parseInt(document.getElementById('edit-id').value))" title="הצג ציר זמן">
                         <i class="material-icons">timeline</i>
                     </button>
                     <button class="close-btn" onclick="closeModal('edit-modal')">
@@ -337,15 +338,15 @@
             <div class="modal-body">
                 <input type="hidden" id="edit-id">
                 <div class="form-group">
-                    <label class="form-label">Title</label>
+                    <label class="form-label">כותרת</label>
                     <input type="text" class="form-input" id="edit-title">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Description</label>
+                    <label class="form-label">תיאור</label>
                     <textarea class="form-textarea" id="edit-description"></textarea>
                 </div>
                 <div class="form-group" id="edit-priority-group">
-                    <label class="form-label">Priority</label>
+                    <label class="form-label">עדיפות</label>
                     <select class="form-select" id="edit-priority">
                         <option value="1">P1 - Critical</option>
                         <option value="2">P2 - High</option>
@@ -355,18 +356,18 @@
                     </select>
                 </div>
                 <div class="form-group" id="edit-complexity-group">
-                    <label class="form-label">Complexity</label>
+                    <label class="form-label">מורכבות</label>
                     <select class="form-select" id="edit-complexity">
-                        <option value="">Not Set</option>
-                        <option value="1">C1 - Trivial</option>
-                        <option value="2">C2 - Simple</option>
-                        <option value="3">C3 - Moderate</option>
-                        <option value="4">C4 - Complex</option>
-                        <option value="5">C5 - Very Complex</option>
+                        <option value="">לא הוגדר</option>
+                        <option value="1">C1 - טריוויאלי</option>
+                        <option value="2">C2 - פשוט</option>
+                        <option value="3">C3 - בינוני</option>
+                        <option value="4">C4 - מורכב</option>
+                        <option value="5">C5 - מסובך מאוד</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Status</label>
+                    <label class="form-label">סטטוס</label>
                     <select class="form-select" id="edit-status">
                         {% for status in statuses %}
                         <option value="{{ status }}">{{ status }}</option>
@@ -374,14 +375,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Type</label>
+                    <label class="form-label">סוג</label>
                     <input type="text" class="form-input" id="edit-type" disabled style="opacity: 0.6;">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Parent Epic</label>
-                    <select class="form-select" id="edit-parent">
-                        <option value="">No parent</option>
-                    </select>
                 </div>
                 <div class="form-group" id="edit-children-section" style="display: none;">
                     <label class="form-label">
@@ -391,9 +386,9 @@
                     <div id="edit-children-list" class="children-list"></div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Tags</label>
+                    <label class="form-label">הוסף תגיות (לחץ אנטר)</label>
                     <div class="tag-input-wrapper">
-                        <input type="text" class="tag-input" id="edit-tags-input" placeholder="Add tags (press Enter)...">
+                        <input type="text" class="tag-input" id="edit-tags-input" placeholder="הוסף תגיות (לחץ אנטר)...">
                         <div class="tag-suggestions" id="edit-tags-suggestions"></div>
                     </div>
                     <div class="tags-container" id="edit-current-tags" style="margin-top: 8px;"></div>
@@ -401,25 +396,25 @@
                 <div class="form-group" id="edit-attachments-group" style="display: none;">
                     <label class="form-label">
                         <i class="material-icons" style="font-size:14px; vertical-align:middle;">description</i>
-                        CV Attachment
+                        קובץ קורות חיים
                     </label>
                     <div class="linked-files-list" id="edit-attachments-list"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">
                         <i class="material-icons" style="font-size:14px; vertical-align:middle;">history</i>
-                        Decision History
+                        היסטוריית החלטות
                     </label>
                     <div class="decisions-list" id="edit-decisions-list"></div>
                     <div class="decision-form">
-                        <input type="text" class="form-input" id="add-decision-choice" placeholder="Decision note (optional)" maxlength="200">
+                        <input type="text" class="form-input" id="add-decision-choice" placeholder="הערת החלטה (אופציונלי)" maxlength="200">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-danger" onclick="confirmDeleteItem()" style="margin-right: auto;">Delete</button>
-                <button class="btn btn-secondary" onclick="closeModal('edit-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveItem()">Save</button>
+                <button class="btn btn-danger" onclick="confirmDeleteItem()" style="margin-right: auto;">מחק</button>
+                <button class="btn btn-secondary" onclick="closeModal('edit-modal')">ביטול</button>
+                <button class="btn btn-primary" onclick="saveItem()">שמירה</button>
             </div>
         </div>
     </div>
@@ -428,26 +423,26 @@
     <div class="modal-overlay" id="update-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">New Update</span>
+                <span class="modal-title">עדכון חדש</span>
                 <button class="close-btn" onclick="closeModal('update-modal')">
                     <i class="material-icons">close</i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Content</label>
-                    <textarea class="form-textarea" id="update-content" placeholder="What's the update?"></textarea>
+                    <label class="form-label">תוכן</label>
+                    <textarea class="form-textarea" id="update-content" placeholder="מה העדכון?"></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Link to Items (optional)</label>
+                    <label class="form-label">קישור לפריטים (אופציונלי)</label>
                     <select class="form-select" id="update-items" multiple style="min-height: 100px;">
                     </select>
-                    <small style="color: var(--text-disabled); font-size: 11px;">Ctrl+click to select multiple</small>
+                    <small style="color: var(--text-disabled); font-size: 11px;">Ctrl+לחיצה לבחירה מרובה</small>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('update-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createUpdate()">Create Update</button>
+                <button class="btn btn-secondary" onclick="closeModal('update-modal')">ביטול</button>
+                <button class="btn btn-primary" onclick="createUpdate()">צור עדכון</button>
             </div>
         </div>
     </div>
@@ -456,57 +451,51 @@
     <div class="modal-overlay" id="newitem-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title" id="newitem-modal-title">New CV</span>
+                <span class="modal-title" id="newitem-modal-title">קורות חיים חדשים</span>
                 <button class="close-btn" onclick="closeModal('newitem-modal')">
                     <i class="material-icons">close</i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Type</label>
+                    <label class="form-label">סוג</label>
                     <select class="form-select" id="newitem-type">
-                        <option value="cv" selected>New CV</option>
-                        <option value="issue">Issue</option>
-                        <option value="feature">Feature</option>
-                        <option value="epic">Epic</option>
-                        <option value="todo">Todo</option>
-                        <option value="diary">Diary</option>
-                        <option value="question">Question</option>
+                        <option value="cv" selected>קורות חיים חדשים</option>
+                        <option value="issue">בעיה</option>
+                        <option value="feature">תכונה</option>
+                        <option value="epic">אפיק</option>
+                        <option value="todo">משימה</option>
+                        <option value="diary">יומן</option>
+                        <option value="question">שאלה</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Title</label>
+                    <label class="form-label">כותרת</label>
                     <input type="text" class="form-input" id="newitem-title" placeholder="שם המועמד">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Parent Epic (optional)</label>
-                    <select class="form-select" id="newitem-parent">
-                        <option value="">No parent</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-textarea" id="newitem-description" placeholder="Optional description..."></textarea>
+                    <label class="form-label">תיאור</label>
+                    <textarea class="form-textarea" id="newitem-description" placeholder="תיאור אופציונלי..."></textarea>
                 </div>
                 <div class="form-group" id="newitem-priority-group">
-                    <label class="form-label">Priority</label>
+                    <label class="form-label">עדיפות</label>
                     <select class="form-select" id="newitem-priority">
-                        <option value="1">P1 - Critical</option>
-                        <option value="2">P2 - High</option>
-                        <option value="3" selected>P3 - Medium</option>
-                        <option value="4">P4 - Low</option>
-                        <option value="5">P5 - Minimal</option>
+                        <option value="1">P1 - קריטי</option>
+                        <option value="2">P2 - גבוה</option>
+                        <option value="3" selected>P3 - בינוני</option>
+                        <option value="4">P4 - נמוך</option>
+                        <option value="5">P5 - מינימלי</option>
                     </select>
                 </div>
                 <div class="form-group" id="newitem-complexity-group">
-                    <label class="form-label">Complexity (Optional)</label>
+                    <label class="form-label">מורכבות (אופציונלי)</label>
                     <select class="form-select" id="newitem-complexity">
-                        <option value="" selected>Not Set</option>
-                        <option value="1">C1 - Trivial</option>
-                        <option value="2">C2 - Simple</option>
-                        <option value="3">C3 - Moderate</option>
-                        <option value="4">C4 - Complex</option>
-                        <option value="5">C5 - Very Complex</option>
+                        <option value="" selected>לא הוגדר</option>
+                        <option value="1">C1 - טריוויאלי</option>
+                        <option value="2">C2 - פשוט</option>
+                        <option value="3">C3 - בינוני</option>
+                        <option value="4">C4 - מורכב</option>
+                        <option value="5">C5 - מסובך מאוד</option>
                     </select>
                 </div>
                 <div class="form-group" id="newitem-cv-group">
@@ -516,8 +505,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('newitem-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createItem()">Create</button>
+                <button class="btn btn-secondary" onclick="closeModal('newitem-modal')">ביטול</button>
+                <button class="btn btn-primary" onclick="createItem()">צור</button>
             </div>
         </div>
     </div>
@@ -526,19 +515,19 @@
     <div class="modal-overlay" id="delete-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">Delete Project</span>
+                <span class="modal-title">מחיקת פרויקט</span>
                 <button class="close-btn" onclick="closeModal('delete-modal')">
                     <i class="material-icons">close</i>
                 </button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: var(--spacing-md);">Are you sure you want to delete project <strong id="delete-project-name"></strong>?</p>
-                <p style="color: var(--md-sys-color-error);">This will permanently delete all items and updates. This action cannot be undone.</p>
+                <p style="margin-bottom: var(--spacing-md);">האם אתה בטוח שברצונך למחוק את הפרויקט <strong id="delete-project-name"></strong>?</p>
+                <p style="color: var(--md-sys-color-error);">זה ימחק לצמיתות את כל הפריטים והעדכונים. אין אפשרות לבטל פעולה זו.</p>
                 <input type="hidden" id="delete-project-id">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('delete-modal')">Cancel</button>
-                <button class="btn btn-danger" onclick="deleteProject()">Delete</button>
+                <button class="btn btn-secondary" onclick="closeModal('delete-modal')">ביטול</button>
+                <button class="btn btn-danger" onclick="deleteProject()">מחק</button>
             </div>
         </div>
     </div>
@@ -547,20 +536,20 @@
     <div class="modal-overlay" id="create-project-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">Create New Project</span>
+                <span class="modal-title">צור פרויקט חדש</span>
                 <button class="close-btn" onclick="closeModal('create-project-modal')">
                     <i class="material-icons">close</i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="new-project-name">Project Name</label>
-                    <input type="text" id="new-project-name" class="form-control" placeholder="Enter project name" />
+                    <label for="new-project-name">שם הפרויקט</label>
+                    <input type="text" id="new-project-name" class="form-control" placeholder="הזן שם פרויקט" />
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('create-project-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createProject()">Create</button>
+                <button class="btn btn-secondary" onclick="closeModal('create-project-modal')">ביטול</button>
+                <button class="btn btn-primary" onclick="createProject()">צור</button>
             </div>
         </div>
     </div>
@@ -569,14 +558,14 @@
     <div class="modal-overlay" id="export-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">Export Project Data</span>
+                <span class="modal-title">ייצא נתוני פרויקט</span>
                 <button class="close-btn" onclick="closeModal('export-modal')">
                     <i class="material-icons">close</i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Format</label>
+                    <label class="form-label">פורמט</label>
                     <select class="form-select" id="export-format">
                         <option value="json">JSON</option>
                         <option value="yaml">YAML</option>
@@ -584,9 +573,9 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Filter by Type (optional)</label>
+                    <label class="form-label">סנן לפי סוג (אופציונלי)</label>
                     <select class="form-select" id="export-type">
-                        <option value="">All Types</option>
+                        <option value="">כל הסוגים</option>
                         <option value="epic">Epic</option>
                         <option value="feature">Feature</option>
                         <option value="issue">Issue</option>
@@ -596,9 +585,9 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Filter by Status (optional)</label>
+                    <label class="form-label">סנן לפי סטטוס (אופציונלי)</label>
                     <select class="form-select" id="export-status">
-                        <option value="">All Statuses</option>
+                        <option value="">כל הסטטוסים</option>
                         <option value="backlog">Backlog</option>
                         <option value="todo">Todo</option>
                         <option value="in_progress">In Progress</option>
@@ -608,44 +597,44 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Include Options</label>
+                    <label class="form-label">אפשרויות הכללה</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-tags" checked>
-                            <span>Tags</span>
+                            <span>תגיות</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-relationships">
-                            <span>Relationships</span>
+                            <span>קשרים</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-metrics">
-                            <span>Metrics (lead time, cycle time)</span>
+                            <span>מדדים (lead time, cycle time)</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-updates">
-                            <span>Project Updates</span>
+                            <span>עדכוני פרויקט</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-epic-progress">
-                            <span>Epic Progress</span>
+                            <span>התקדמות אפיק</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" id="export-detailed">
-                            <span>Detailed view (Markdown only)</span>
+                            <span>תצוגה מפורטת (Markdown בלבד)</span>
                         </label>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Max Items</label>
+                    <label class="form-label">מספר פריטים מקסימלי</label>
                     <input type="number" class="form-input" id="export-limit" value="500" min="1" max="10000">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('export-modal')">Cancel</button>
+                <button class="btn btn-secondary" onclick="closeModal('export-modal')">ביטול</button>
                 <button class="btn btn-primary" onclick="doExport()">
                     <i class="material-icons" style="font-size: 18px; margin-right: 4px;">download</i>
-                    Export
+                    ייצא
                 </button>
             </div>
         </div>
@@ -655,7 +644,7 @@
     <div class="modal-overlay" id="tag-manager-modal">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-header">
-                <span class="modal-title">Manage Tags</span>
+                <span class="modal-title">ניהול תגיות</span>
                 <button class="close-btn" onclick="closeModal('tag-manager-modal')">
                     <i class="material-icons">close</i>
                 </button>
@@ -665,7 +654,7 @@
                     <!-- Tags will be populated here -->
                 </div>
                 <div class="tag-manager-empty" id="tag-manager-empty" style="display: none;">
-                    No tags in this project yet.
+                    אין תגיות בפרויקט זה עדיין.
                 </div>
             </div>
         </div>
@@ -675,7 +664,7 @@
     <div class="modal-overlay" id="search-modal">
         <div class="modal" style="max-width: 600px;">
             <div class="modal-header">
-                <span class="modal-title">Search</span>
+                <span class="modal-title">חיפוש</span>
                 <button class="close-btn" onclick="closeModal('search-modal')">
                     <i class="material-icons">close</i>
                 </button>
@@ -684,7 +673,7 @@
                 <div class="form-group">
                     <div class="search-input-wrapper" style="padding: 0; border: none;">
                         <i class="material-icons" style="left: 12px;">search</i>
-                        <input type="text" class="search-input" id="search-query" placeholder="Search items and updates..." onkeydown="if(event.key==='Enter')doSearch()">
+                        <input type="text" class="search-input" id="search-query" placeholder="חפש פריטים ועדכונים..." onkeydown="if(event.key==='Enter')doSearch()">
                     </div>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
@@ -694,7 +683,7 @@
                     </label>
                     <label for="semantic-search-toggle" style="cursor: pointer; font-size: 14px; color: var(--text-secondary);">
                         <i class="material-icons" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">psychology</i>
-                        Semantic search (AI-powered)
+                        חיפוש סמנטי (בעזרת בינה מלאכותית)
                     </label>
                 </div>
                 <div id="search-results"></div>

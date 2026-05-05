@@ -1089,6 +1089,27 @@
             gap: 10px;
             color: var(--text-medium-emphasis);
             font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .user-info-label,
+        .user-info-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .user-info-label {
+            margin-right: 2px;
+        }
+
+        .user-info-name {
+            padding: 0 6px;
+            border-radius: var(--border-radius-sm);
+            background: rgba(255,255,255,0.06);
+            color: var(--text-high-emphasis);
+            min-width: 56px;
+            text-align: left;
         }
 
         .logout-btn {

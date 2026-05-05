@@ -126,7 +126,7 @@ async function handleDrop(e, showToast, fetchFn = fetch) {
 
     // Validate status exists in system (backend will validate type-specific rules)
     if (!isValidStatus(newStatus)) {
-        const error = `Status '${newStatus}' not found`;
+        const error = `הסטטוס '${newStatus}' לא נמצא`;
         if (showToast) showToast(error, 'error');
         return { success: false, error };
     }
@@ -140,14 +140,14 @@ async function handleDrop(e, showToast, fetchFn = fetch) {
         const result = await res.json();
 
         if (!res.ok || !result.success) {
-            const error = result.message || result.error || 'Failed to update status';
+            const error = result.message || result.error || 'עדכון הסטטוס נכשל';
             if (showToast) showToast(error, 'error');
             return { success: false, error, blocked: !!result.blockers };
         }
 
         // Move card visually
         dropTarget.appendChild(card);
-        if (showToast) showToast(`Moved to ${newStatus.replace('_', ' ')}`);
+        if (showToast) showToast(`הועבר ל- ${newStatus.replace('_', ' ')}`);
 
         return { success: true, newStatus };
     } catch (err) {
