@@ -36,3 +36,10 @@ The web UI is available on port 5000.
 
 - Docker and Docker Compose must be installed on the target host.
 - The compose file includes MySQL and persistent volume storage automatically.
+
+## Render web service note
+
+If you deploy this image as a Render web service, Render provides the listening port through `PORT`, and the container now binds to that automatically.
+
+- If you set `KANBAN_DB_USER`, `KANBAN_DB_PASSWORD`, and `KANBAN_DB_NAME`, the startup script will wait for MySQL and run migrations.
+- If those MySQL variables are not set, the app falls back to the default SQLite backend instead of failing during startup.
