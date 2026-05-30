@@ -1227,8 +1227,15 @@ async function doExport() {
         const disposition = response.headers.get('Content-Disposition');
         let filename = 'export';
         if (disposition) {
-            const match = disposition.match(/filename="?([^"]+)"?/);
-            if (match) filename = match[1];
+            const filenameStar = disposition.match(
+                /filename\*\s*=\s*UTF-8''([^;]+)/i
+            );
+            if (filenameStar) {
+                filename = decodeURIComponent(filenameStar[1]);
+            } else {
+                const match = disposition.match(/filename="?([^";]+)"?/i);
+                if (match) filename = match[1];
+            }
         }
 
         // Download the file

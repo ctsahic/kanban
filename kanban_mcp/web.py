@@ -4,6 +4,7 @@
 import os
 import sys
 from io import BytesIO
+from urllib.parse import quote
 
 from flask import (
     Flask, render_template, request, jsonify, Response, send_file,
@@ -383,11 +384,14 @@ def api_export():
             # Sanitize filename
             safe_name = ''.join(
                 c for c in project_name
-                if c.isalnum() or c in '-_'
+                if c.isascii() and (c.isalnum() or c in '-_')
             )[:50]
+            fallback_name = safe_name or 'export'
             ext = get_file_extension(format_type)
+            filename = f'{project_name}{ext}'
             response.headers['Content-Disposition'] = (
-                f'attachment; filename="{safe_name}{ext}"'
+                f"attachment; filename={fallback_name}{ext}; "
+                f"filename*=UTF-8''{quote(filename)}"
             )
 
         return response
