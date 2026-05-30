@@ -49,11 +49,12 @@ def _wait_for_mysql() -> None:
 def main() -> int:
     if _mysql_env_configured():
         _wait_for_mysql()
-        print('Running database migrations...')
-        backend = create_backend()
-        auto_migrate(backend)
     else:
         print('MySQL env vars not set; using the default SQLite backend.')
+
+    print('Running database migrations...')
+    backend = create_backend()
+    auto_migrate(backend)
     return 0
 
 
