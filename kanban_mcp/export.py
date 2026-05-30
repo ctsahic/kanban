@@ -10,6 +10,16 @@ import json
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
+STATUS_COLUMN_ORDER = [
+    'חדשים',
+    'ראיון טלפוני',
+    'ראיון מקצועי',
+    'רותם',
+    'שכר',
+    'סיווג',
+    'אין התאמה',
+]
+
 # XLSX is optional - gracefully handle missing import
 try:
     from openpyxl import Workbook
@@ -44,22 +54,21 @@ class ExportBuilder:
         self,
         item_ids: List[int] = None,
         item_type: str = None,
-        status: str = None,
+        statuses: List[str] = None,
         include_tags: bool = True,
         include_relationships: bool = False,
         include_metrics: bool = False,
         include_updates: bool = False,
         include_epic_progress: bool = False,
         include_decisions: bool = False,
-        limit: int = 500
+        limit: int = None
     ) -> Dict[str, Any]:
         """Build complete export data structure.
 
         Args:
             item_ids: Optional list of specific item IDs to include
-            item_type: Filter by item type (cv only)
-            status: Filter by status
-                (backlog, todo, in_progress, review, done, closed)
+            statuses: Filter by multiple statuses
+                (חדשים, ראיון טלפוני, ראיון מקצועי, רותם, שכר, סיווג, אין התאמה)
             include_tags: Include tag data for each item
             include_relationships: Include relationship data
             include_metrics: Include calculated metrics
@@ -86,8 +95,7 @@ class ExportBuilder:
             "filters": {
                 "item_ids": item_ids,
                 "item_type": item_type,
-                "status": status,
-                "limit": limit
+                "statuses": statuses,
             },
             "include_options": {
                 "tags": include_tags,
@@ -104,10 +112,11 @@ class ExportBuilder:
             items = [self.db.get_item(item_id) for item_id in item_ids]
             items = [i for i in items if i is not None]
         else:
+            status_filter = statuses if statuses else None
             items = self.db.list_items(
                 project_id=self.project_id,
-                type_name=item_type if item_type else None,
-                status_name=status if status else None,
+                type_name='cv',
+                status_names=status_filter,
                 limit=limit
             )
 
@@ -338,10 +347,10 @@ def format_markdown(data: Dict[str, Any], detailed: bool = False) -> str:
     # Filters applied
     filters = metadata.get("filters", {})
     active_filters = []
-    if filters.get("item_type"):
-        active_filters.append(f"type={filters['item_type']}")
-    if filters.get("status"):
-        active_filters.append(f"status={filters['status']}")
+    if filters.get("statuses"):
+        active_filters.append(
+            f"statuses={','.join(filters['statuses'])}"
+        )
     if filters.get("item_ids"):
         active_filters.append(f"ids={','.join(map(str, filters['item_ids']))}")
     if active_filters:
@@ -352,25 +361,16 @@ def format_markdown(data: Dict[str, Any], detailed: bool = False) -> str:
     lines.append("## Summary")
     lines.append("")
 
-    # By type
-    by_type = summary.get("by_type", {})
-    if by_type:
-        lines.append("### By Type")
-        for type_name, count in sorted(by_type.items()):
-            lines.append(f"- **{type_name}:** {count}")
-        lines.append("")
-
     # By status
     by_status = summary.get("by_status", {})
     if by_status:
         lines.append("### By Status")
-        status_order = [
-            'backlog', 'todo', 'in_progress',
-            'review', 'done', 'closed'
-        ]
-        for status in status_order:
+        for status in STATUS_COLUMN_ORDER:
             if status in by_status:
                 lines.append(f"- **{status}:** {by_status[status]}")
+        for status, count in sorted(by_status.items()):
+            if status not in STATUS_COLUMN_ORDER:
+                lines.append(f"- **{status}:** {count}")
         lines.append("")
 
     # Items section
@@ -381,30 +381,29 @@ def format_markdown(data: Dict[str, Any], detailed: bool = False) -> str:
             lines.extend(_format_item_detailed(item))
             lines.append("")
     else:
-        # Group items by type
-        items_by_type = {}
+        # Group items by status
+        items_by_status = {}
         for item in items:
-            type_name = item['type_name']
-            if type_name not in items_by_type:
-                items_by_type[type_name] = []
-            items_by_type[type_name].append(item)
+            status_name = item['status_name']
+            if status_name not in items_by_status:
+                items_by_status[status_name] = []
+            items_by_status[status_name].append(item)
 
-        lines.append("## Items by Type")
+        lines.append("## Items by Status")
         lines.append("")
 
-        type_order = ['cv']
-        for type_name in type_order:
-            if type_name in items_by_type:
+        for status_name in STATUS_COLUMN_ORDER:
+            if status_name in items_by_status:
                 lines.extend(_format_items_table(
-                    type_name, items_by_type[type_name]
+                    status_name, items_by_status[status_name]
                 ))
                 lines.append("")
 
-        # Any types not in the standard order
-        for type_name in sorted(items_by_type.keys()):
-            if type_name not in type_order:
+        # Any statuses not in the standard order
+        for status_name in sorted(items_by_status.keys()):
+            if status_name not in STATUS_COLUMN_ORDER:
                 lines.extend(_format_items_table(
-                    type_name, items_by_type[type_name]
+                    status_name, items_by_status[status_name]
                 ))
                 lines.append("")
 
@@ -433,9 +432,9 @@ def format_markdown(data: Dict[str, Any], detailed: bool = False) -> str:
 
 
 def _format_items_table(type_name: str, items: List[Dict]) -> List[str]:
-    """Format items of a single type as a markdown table."""
+    """Format items of a single status as a markdown table."""
     lines = []
-    lines.append(f"### {type_name.title()}s")
+    lines.append(f"### {type_name}")
     lines.append("")
 
     # Determine columns based on data
@@ -443,8 +442,8 @@ def _format_items_table(type_name: str, items: List[Dict]) -> List[str]:
     has_complexity = any(item.get('complexity') for item in items)
 
     # Header
-    header = "| ID | Title | Status | Priority |"
-    separator = "|---|---|---|---|"
+    header = "| ID | Title | Status | Priority | Decisions |"
+    separator = "|---|---|---|---|---|"
     if has_complexity:
         header += " Complexity |"
         separator += "---|"
@@ -464,10 +463,12 @@ def _format_items_table(type_name: str, items: List[Dict]) -> List[str]:
         )
         # Escape pipe characters in title
         title = title.replace("|", "\\|")
+        decisions = _summarize_decisions(item.get('decisions', []))
         row = (
             f"| #{item['id']} | {title} "
             f"| {item['status_name']} "
-            f"| P{item['priority']} |"
+            f"| P{item['priority']} "
+            f"| {decisions} |"
         )
 
         if has_complexity:
@@ -493,7 +494,6 @@ def _format_item_detailed(item: Dict) -> List[str]:
 
     lines.append(f"### #{item['id']} - {item['title']}")
     lines.append("")
-    lines.append(f"- **Type:** {item['type_name']}")
     lines.append(f"- **Status:** {item['status_name']}")
     lines.append(f"- **Priority:** P{item['priority']}")
 
@@ -603,6 +603,21 @@ def _format_item_detailed(item: Dict) -> List[str]:
     return lines
 
 
+def _summarize_decisions(decisions: List[Dict]) -> str:
+    """Condense decision history for table views."""
+    if not decisions:
+        return "-"
+
+    choices = [d.get('choice', '') for d in decisions if d.get('choice')]
+    if not choices:
+        return "-"
+
+    summary = ' → '.join(choices[:3])
+    if len(choices) > 3:
+        summary += f" … (+{len(choices) - 3})"
+    return summary
+
+
 def export_to_format(
     data: Dict[str, Any],
     format: str = "json",
@@ -658,67 +673,106 @@ def format_xlsx(data: Dict[str, Any]) -> bytes:
     summary = data.get("summary", {})
     updates = data.get("updates", [])
 
+    items_by_status = _group_items_by_status(items)
+    ordered_statuses = _ordered_statuses(items_by_status)
+
     workbook = Workbook()
-    status_sheet = workbook.active
-    status_sheet.title = "Status Report"
+    summary_sheet = workbook.active
+    summary_sheet.title = "סיכום"
 
     header_fill = PatternFill("solid", fgColor="1F2937")
     header_font = Font(color="FFFFFF", bold=True)
     section_fill = PatternFill("solid", fgColor="E5E7EB")
+    wrap_top = Alignment(wrap_text=True, vertical="top")
 
     project_name = metadata.get("project_name", "Kanban Export")
-    status_sheet["A1"] = f"Status Report - {project_name}"
-    status_sheet["A1"].font = Font(bold=True, size=14)
-    status_sheet.merge_cells("A1:H1")
+    summary_sheet["A1"] = f"דוח מועמדים - {project_name}"
+    summary_sheet["A1"].font = Font(bold=True, size=14)
+    summary_sheet.merge_cells("A1:C1")
 
-    status_sheet["A2"] = "Exported At"
-    status_sheet["B2"] = metadata.get("exported_at", "")
-    status_sheet["A3"] = "Total Items"
-    status_sheet["B3"] = summary.get("total_items", 0)
-    status_sheet["A4"] = "By Status"
-    status_sheet["A4"].fill = section_fill
+    summary_sheet["A2"] = "Exported At"
+    summary_sheet["B2"] = metadata.get("exported_at", "")
+    summary_sheet["A3"] = "Total Items"
+    summary_sheet["B3"] = summary.get("total_items", 0)
+    summary_sheet["A4"] = "By Status"
+    summary_sheet["A4"].fill = section_fill
 
     by_status = summary.get("by_status", {})
     row = 5
+    for status_name in STATUS_COLUMN_ORDER:
+        if status_name in by_status:
+            summary_sheet[f"A{row}"] = status_name
+            summary_sheet[f"B{row}"] = by_status[status_name]
+            row += 1
     for status_name in sorted(by_status.keys()):
-        status_sheet[f"A{row}"] = status_name
-        status_sheet[f"B{row}"] = by_status[status_name]
-        row += 1
+        if status_name not in STATUS_COLUMN_ORDER:
+            summary_sheet[f"A{row}"] = status_name
+            summary_sheet[f"B{row}"] = by_status[status_name]
+            row += 1
 
-    row += 1
-    columns = [
+    status_sheet = workbook.create_sheet("סטטוסים")
+    status_sheet.freeze_panes = "A3"
+    status_sheet["A1"] = "מועמדים לפי סטטוס"
+    status_sheet["A1"].font = Font(bold=True, size=14)
+    status_sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max(1, len(ordered_statuses)))
+
+    for col_idx, status_name in enumerate(ordered_statuses, start=1):
+        header_cell = status_sheet.cell(row=2, column=col_idx, value=status_name)
+        header_cell.fill = header_fill
+        header_cell.font = header_font
+        header_cell.alignment = Alignment(horizontal="center", vertical="center")
+        status_sheet.column_dimensions[header_cell.column_letter].width = 32
+
+        count_cell = status_sheet.cell(
+            row=3,
+            column=col_idx,
+            value=f"{len(items_by_status.get(status_name, []))} מועמדים"
+        )
+        count_cell.fill = section_fill
+        count_cell.alignment = Alignment(horizontal="center")
+
+        current_row = 4
+        for item in items_by_status.get(status_name, []):
+            card_cell = status_sheet.cell(
+                row=current_row,
+                column=col_idx,
+                value=_format_status_card(item)
+            )
+            card_cell.alignment = wrap_top
+            current_row += 1
+
+    detail_sheet = workbook.create_sheet("פירוט")
+    detail_sheet.freeze_panes = "A2"
+    detail_columns = [
         ("ID", 10),
-        ("Title", 32),
-        ("Type", 16),
+        ("Title", 30),
         ("Status", 18),
         ("Priority", 10),
-        ("Complexity", 12),
         ("Created At", 22),
         ("Closed At", 22),
+        ("Decision History", 60),
     ]
-    start_row = row + 1
-    for col_idx, (title, width) in enumerate(columns, start=1):
-        cell = status_sheet.cell(row=start_row, column=col_idx, value=title)
+    for col_idx, (title, width) in enumerate(detail_columns, start=1):
+        cell = detail_sheet.cell(row=1, column=col_idx, value=title)
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center")
-        status_sheet.column_dimensions[cell.column_letter].width = width
+        detail_sheet.column_dimensions[cell.column_letter].width = width
 
-    current_row = start_row + 1
-    for item in items:
-        values = [
+    for row_idx, item in enumerate(items, start=2):
+        row_values = [
             item.get("id"),
             item.get("title"),
-            item.get("type_name"),
             item.get("status_name"),
             item.get("priority"),
-            item.get("complexity"),
             item.get("created_at"),
             item.get("closed_at"),
+            _format_decision_history(item.get("decisions", [])),
         ]
-        for col_idx, value in enumerate(values, start=1):
-            status_sheet.cell(row=current_row, column=col_idx, value=value)
-        current_row += 1
+        for col_idx, value in enumerate(row_values, start=1):
+            cell = detail_sheet.cell(row=row_idx, column=col_idx, value=value)
+            if col_idx == 7:
+                cell.alignment = wrap_top
 
     if updates:
         updates_sheet = workbook.create_sheet("Updates")
@@ -743,6 +797,53 @@ def format_xlsx(data: Dict[str, Any]) -> bytes:
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
+
+
+def _group_items_by_status(items: List[Dict]) -> Dict[str, List[Dict]]:
+    """Group exported items by status."""
+    grouped: Dict[str, List[Dict]] = {}
+    for item in items:
+        grouped.setdefault(item.get("status_name") or "", []).append(item)
+    return grouped
+
+
+def _ordered_statuses(items_by_status: Dict[str, List[Dict]]) -> List[str]:
+    """Return report statuses in the configured order."""
+    ordered = [status for status in STATUS_COLUMN_ORDER if status in items_by_status]
+    for status in sorted(items_by_status.keys()):
+        if status not in STATUS_COLUMN_ORDER:
+            ordered.append(status)
+    return ordered
+
+
+def _format_decision_history(decisions: List[Dict]) -> str:
+    """Format decision history for a spreadsheet cell."""
+    if not decisions:
+        return "-"
+
+    parts = []
+    for decision in decisions:
+        choice = decision.get("choice") or ""
+        rationale = decision.get("rationale") or ""
+        if rationale:
+            parts.append(f"{choice}\n{rationale}")
+        else:
+            parts.append(choice)
+    return "\n\n".join(part for part in parts if part)
+
+
+def _format_status_card(item: Dict[str, Any]) -> str:
+    """Format a compact item card for the status sheet."""
+    title = item.get("title", "")
+    priority = item.get("priority")
+    parts = [f"#{item.get('id')} - {title}"]
+    if priority is not None:
+        parts.append(f"עדיפות: P{priority}")
+    decisions = _format_decision_history(item.get("decisions", []))
+    if decisions != "-":
+        parts.append("היסטוריית החלטות:")
+        parts.append(decisions)
+    return "\n".join(parts)
 
 
 def get_mime_type(format: str) -> str:

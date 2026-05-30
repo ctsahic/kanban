@@ -1174,13 +1174,12 @@ async function handleDropWrapper(e) {
 function openExportModal() {
     // Reset form to defaults
     document.getElementById('export-format').value = 'xlsx';
-    document.getElementById('export-status').value = '';
-    document.getElementById('export-relationships').checked = false;
-    document.getElementById('export-metrics').checked = false;
-    document.getElementById('export-updates').checked = false;
-    document.getElementById('export-epic-progress').checked = false;
-    document.getElementById('export-detailed').checked = false;
-    document.getElementById('export-limit').value = '500';
+    const statusesSelect = document.getElementById('export-statuses');
+    if (statusesSelect) {
+        Array.from(statusesSelect.options).forEach(option => {
+            option.selected = true;
+        });
+    }
     openModal('export-modal');
 }
 
@@ -1195,23 +1194,15 @@ async function doExport() {
     params.set('project', PROJECT_ID);
     params.set('format', document.getElementById('export-format').value);
     params.set('download', 'true');
-
-    // Add filters
-    params.set('type', 'cv');
-
-    const status = document.getElementById('export-status').value;
-    if (status) params.set('status', status);
-
-    // Add include options
-    params.set('relationships', document.getElementById('export-relationships').checked);
-    params.set('metrics', document.getElementById('export-metrics').checked);
-    params.set('updates', document.getElementById('export-updates').checked);
-    params.set('epic_progress', document.getElementById('export-epic-progress').checked);
-    params.set('detailed', document.getElementById('export-detailed').checked);
-
-    // Add limit
-    const limit = parseInt(document.getElementById('export-limit').value) || 500;
-    params.set('limit', Math.max(1, Math.min(limit, 10000)));
+    const statusesSelect = document.getElementById('export-statuses');
+    if (statusesSelect) {
+        const selectedStatuses = Array.from(statusesSelect.selectedOptions)
+            .map(option => option.value)
+            .filter(Boolean);
+        if (selectedStatuses.length > 0) {
+            params.set('statuses', selectedStatuses.join(','));
+        }
+    }
 
     try {
         // Trigger download

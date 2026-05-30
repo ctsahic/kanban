@@ -13,6 +13,7 @@ from flask import (
 from kanban_mcp.core import KanbanDB
 from kanban_mcp.export import (
     ExportBuilder,
+    STATUS_COLUMN_ORDER,
     export_to_format,
     get_mime_type,
     get_file_extension,
@@ -288,16 +289,9 @@ def api_export():
     Query params:
         project: Project ID (required)
         format: Output format - json, yaml, markdown, xlsx (default: json)
-        type: Filter by item type (cv only)
-        status: Filter by status
+        statuses: Comma-separated status list for column layout
         ids: Comma-separated item IDs
-        tags: Include tags (default: true)
-        relationships: Include relationships (default: false)
-        metrics: Include metrics (default: false)
-        updates: Include updates (default: false)
-        epic_progress: Include epic progress (default: false)
         detailed: For markdown, show detailed view (default: false)
-        limit: Max items (default: 500)
         download: If true, set Content-Disposition header (default: false)
     """
     project_id = request.args.get('project', '')
@@ -313,10 +307,12 @@ def api_export():
         }), 400
 
     # Parse filter parameters
-    item_type = request.args.get('type', '') or 'cv'
-    if item_type != 'cv':
-        return jsonify({'error': 'Only cv exports are supported.'}), 400
-    status = request.args.get('status', '') or None
+    statuses_param = request.args.get('statuses', '') or request.args.get('status', '')
+    statuses = [
+        status.strip()
+        for status in statuses_param.split(',')
+        if status.strip()
+    ] if statuses_param else list(STATUS_COLUMN_ORDER)
 
     # Parse item IDs
     ids_param = request.args.get('ids', '')
@@ -340,34 +336,18 @@ def api_export():
             return False
         return default
 
-    include_tags = parse_bool('tags', True)
-    include_relationships = parse_bool('relationships', False)
-    include_metrics = parse_bool('metrics', False)
-    include_updates = parse_bool('updates', False)
-    include_epic_progress = parse_bool('epic_progress', False)
-    detailed = parse_bool('detailed', False)
+    detailed = parse_bool('detailed', format_type in ('markdown', 'md'))
     download = parse_bool('download', False)
-
-    # Parse limit
-    try:
-        limit = int(request.args.get('limit', '500'))
-        limit = max(1, min(limit, 10000))  # Clamp to reasonable range
-    except ValueError:
-        limit = 500
 
     try:
         # Build export data
         builder = ExportBuilder(db, project_id)
         data = builder.build_export_data(
             item_ids=item_ids,
-            item_type=item_type,
-            status=status,
-            include_tags=include_tags,
-            include_relationships=include_relationships,
-            include_metrics=include_metrics,
-            include_updates=include_updates,
-            include_epic_progress=include_epic_progress,
-            limit=limit
+            statuses=statuses,
+            include_tags=True,
+            include_decisions=True,
+            limit=None,
         )
 
         # Format output

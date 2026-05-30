@@ -289,7 +289,8 @@ class KanbanDB:
             return cursor.fetchall()
 
     def list_items(self, project_id: str = None, type_name: str = None,
-                   status_name: str = None, tag_names: List[str] = None,
+                   status_name: str = None, status_names: List[str] = None,
+                   tag_names: List[str] = None,
                    tag_match_mode: str = "any", limit: int = 50) -> List[Dict]:
         """List items with optional filters including tags.
 
@@ -297,6 +298,7 @@ class KanbanDB:
             project_id: Filter by project
             type_name: Filter by item type
             status_name: Filter by status
+            status_names: Filter by multiple statuses
             tag_names: Filter by tags (list of tag names)
             tag_match_mode: 'any' (OR) or 'all' (AND) for tag filtering
             limit: Max items to return
@@ -345,6 +347,12 @@ class KanbanDB:
             if status_name:
                 query += " AND s.name = %s"
                 params.append(status_name)
+            elif status_names:
+                cleaned_statuses = [s for s in status_names if s]
+                if cleaned_statuses:
+                    placeholders = ','.join(['%s'] * len(cleaned_statuses))
+                    query += f" AND s.name IN ({placeholders})"
+                    params.extend(cleaned_statuses)
 
             # Tag filter
             if tag_names:
@@ -367,8 +375,10 @@ class KanbanDB:
                     params.extend(tag_names)
                     params.append(len(tag_names))
 
-            query += " ORDER BY i.priority ASC, i.created_at DESC LIMIT %s"
-            params.append(limit)
+            query += " ORDER BY i.priority ASC, i.created_at DESC"
+            if limit is not None:
+                query += " LIMIT %s"
+                params.append(limit)
 
             cursor.execute(self._sql(query), params)
             return cursor.fetchall()

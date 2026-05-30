@@ -524,49 +524,23 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">סוג ייצוא</label>
-                    <input type="text" class="form-input" value="קורות חיים בלבד" disabled>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">סנן לפי סטטוס (אופציונלי)</label>
-                    <select class="form-select" id="export-status">
-                        <option value="">כל הסטטוסים</option>
-                        <option value="backlog">Backlog</option>
-                        <option value="todo">Todo</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="review">Review</option>
-                        <option value="done">Done</option>
-                        <option value="closed">Closed</option>
+                    <label class="form-label">סטטוסים בדוח</label>
+                    <select class="form-select" id="export-statuses" multiple size="7">
+                        <option value="חדשים" selected>חדשים</option>
+                        <option value="ראיון טלפוני" selected>ראיון טלפוני</option>
+                        <option value="ראיון מקצועי" selected>ראיון מקצועי</option>
+                        <option value="רותם" selected>רותם</option>
+                        <option value="שכר" selected>שכר</option>
+                        <option value="סיווג" selected>סיווג</option>
+                        <option value="אין התאמה" selected>אין התאמה</option>
                     </select>
+                    <small style="display:block; margin-top:6px; color: var(--text-disabled);">
+                        בחר אילו עמודות סטטוס לכלול בדוח. ברירת המחדל כוללת את כולן.
+                    </small>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">אפשרויות הכללה</label>
-                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="export-relationships">
-                            <span>קשרים</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="export-metrics">
-                            <span>מדדים (lead time, cycle time)</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="export-updates">
-                            <span>עדכוני פרויקט</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="export-epic-progress">
-                            <span>התקדמות אפיק</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="export-detailed">
-                            <span>תצוגה מפורטת (Markdown בלבד)</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">מספר פריטים מקסימלי</label>
-                    <input type="number" class="form-input" id="export-limit" value="500" min="1" max="10000">
+                    <label class="form-label">הערה</label>
+                    <input type="text" class="form-input" value="הדוח כולל היסטוריית החלטות" disabled>
                 </div>
             </div>
             <div class="modal-footer">

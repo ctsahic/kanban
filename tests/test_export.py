@@ -5,14 +5,18 @@ Tests for kanban_export module.
 
 import json
 import pytest
+from io import BytesIO
 from datetime import datetime
 from unittest.mock import Mock
+
+from openpyxl import load_workbook
 
 from kanban_mcp.export import (
     ExportBuilder,
     format_json,
     format_yaml,
     format_markdown,
+    format_xlsx,
     export_to_format,
     get_mime_type,
     get_file_extension,
@@ -47,7 +51,16 @@ class TestExportBuilder:
                 'complexity': 3,
                 'parent_id': None,
                 'created_at': datetime(2024, 1, 1, 10, 0, 0),
-                'closed_at': None
+                'closed_at': None,
+                'decisions': [
+                    {
+                        'id': 1,
+                        'choice': 'עבר סינון',
+                        'rejected_alternatives': None,
+                        'rationale': 'התאמה ראשונית',
+                        'created_at': datetime(2024, 1, 1, 11, 0, 0)
+                    }
+                ]
             },
             {
                 'id': 2,
@@ -59,7 +72,8 @@ class TestExportBuilder:
                 'complexity': 2,
                 'parent_id': None,
                 'created_at': datetime(2024, 1, 2, 10, 0, 0),
-                'closed_at': datetime(2024, 1, 5, 15, 0, 0)
+                'closed_at': datetime(2024, 1, 5, 15, 0, 0),
+                'decisions': []
             }
         ]
 
@@ -87,7 +101,7 @@ class TestExportBuilder:
 
         self.mock_db.list_items.assert_called_once()
         call_kwargs = self.mock_db.list_items.call_args[1]
-        assert call_kwargs['type_name'] == 'feature'
+        assert call_kwargs['type_name'] == 'cv'
 
     def test_build_export_data_with_item_ids(self):
         """Test export with specific item IDs."""
@@ -255,6 +269,15 @@ class TestFormatters:
                     'parent_id': None,
                     'created_at': '2024-01-01T10:00:00',
                     'closed_at': None,
+                    'decisions': [
+                        {
+                            'id': 1,
+                            'choice': 'עבר סינון',
+                            'rejected_alternatives': None,
+                            'rationale': 'התאמה ראשונית',
+                            'created_at': '2024-01-01T11:00:00'
+                        }
+                    ],
                     'tags': [{'id': 1, 'name': 'frontend', 'color': '#ff0000'}]
                 }
             ],
@@ -308,8 +331,8 @@ class TestFormatters:
         assert '# Kanban Export: Test Project' in result
         assert '**Total Items:** 1' in result
         assert '## Summary' in result
-        assert '### By Type' in result
-        assert '**feature:** 1' in result
+        assert '### By Status' in result
+        assert '**in_progress:** 1' in result
 
     def test_format_markdown_detailed(self):
         """Test Markdown detailed format."""
@@ -317,15 +340,37 @@ class TestFormatters:
 
         assert '## Items (Detailed)' in result
         assert '### #1 - Test Feature' in result
-        assert '**Type:** feature' in result
+        assert '**Status:** in_progress' in result
         assert '**Tags:** frontend' in result
+        assert '**Decisions:**' in result
+        assert 'עבר סינון' in result
 
     def test_format_markdown_table(self):
         """Test Markdown table generation."""
         result = format_markdown(self.sample_data, detailed=False)
 
-        assert '| ID | Title | Status | Priority |' in result
+        assert '| ID | Title | Status | Priority | Decisions |' in result
         assert '| #1 |' in result
+
+    def test_format_xlsx_contains_status_and_decisions_sheets(self):
+        """Test XLSX format includes the new report sheets."""
+        data = {
+            'metadata': {
+                'project_name': 'Test Project',
+                'exported_at': '2024-01-25T10:30:00'
+            },
+            'items': self.sample_data['items'],
+            'summary': self.sample_data['summary']
+        }
+
+        blob = format_xlsx(data)
+        workbook = load_workbook(BytesIO(blob))
+
+        assert 'סיכום' in workbook.sheetnames
+        assert 'סטטוסים' in workbook.sheetnames
+        assert 'פירוט' in workbook.sheetnames
+        assert workbook['פירוט']['G2'].value is not None
+        assert 'עבר סינון' in workbook['פירוט']['G2'].value
 
     def test_format_markdown_with_updates(self):
         """Test Markdown format with updates."""
