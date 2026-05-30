@@ -149,6 +149,8 @@ class KanbanDB:
 
     def get_type_id(self, type_name: str) -> int:
         """Get item_type id by name."""
+        if type_name != 'cv':
+            raise ValueError("Only cv items are supported")
         with self._db_cursor() as cursor:
             cursor.execute(
                 self._sql(
@@ -191,6 +193,9 @@ class KanbanDB:
                     complexity: int = None, status_name: str = None,
                     parent_id: int = None) -> int:
         """Create a new item. Returns item id."""
+        if type_name != 'cv':
+            raise ValueError("Only cv items are supported")
+
         # Validate complexity if provided
         if complexity is not None and (complexity < 1 or complexity > 5):
             raise ValueError(f"Complexity must be 1-5, got {complexity}")

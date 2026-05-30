@@ -57,8 +57,7 @@ class ExportBuilder:
 
         Args:
             item_ids: Optional list of specific item IDs to include
-            item_type: Filter by item type
-                (issue, feature, epic, todo, diary, question)
+            item_type: Filter by item type (cv only)
             status: Filter by status
                 (backlog, todo, in_progress, review, done, closed)
             include_tags: Include tag data for each item
@@ -393,7 +392,7 @@ def format_markdown(data: Dict[str, Any], detailed: bool = False) -> str:
         lines.append("## Items by Type")
         lines.append("")
 
-        type_order = ['epic', 'feature', 'issue', 'todo', 'diary']
+        type_order = ['cv']
         for type_name in type_order:
             if type_name in items_by_type:
                 lines.extend(_format_items_table(

@@ -287,7 +287,7 @@ def api_export():
     Query params:
         project: Project ID (required)
         format: Output format - json, yaml, markdown, xlsx (default: json)
-        type: Filter by item type
+        type: Filter by item type (cv only)
         status: Filter by status
         ids: Comma-separated item IDs
         tags: Include tags (default: true)
@@ -312,7 +312,9 @@ def api_export():
         }), 400
 
     # Parse filter parameters
-    item_type = request.args.get('type', '') or None
+    item_type = request.args.get('type', '') or 'cv'
+    if item_type != 'cv':
+        return jsonify({'error': 'Only cv exports are supported.'}), 400
     status = request.args.get('status', '') or None
 
     # Parse item IDs

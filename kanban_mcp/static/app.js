@@ -29,9 +29,7 @@ function getItemTypeLabel(typeName) {
 }
 
 function updateNewItemModalFields() {
-    const typeSelect = document.getElementById('newitem-type');
-    const typeName = typeSelect ? typeSelect.value : CV_ITEM_TYPE;
-    const isCv = isCvItemType(typeName);
+    const isCv = true;
 
     const title = document.getElementById('newitem-modal-title');
     const titleInput = document.getElementById('newitem-title');
@@ -64,7 +62,7 @@ function updateNewItemFileLabel() {
 }
 
 function updateEditItemModalFields(typeName) {
-    const isCv = isCvItemType(typeName);
+    const isCv = true;
     const priorityGroup = document.getElementById('edit-priority-group');
     const complexityGroup = document.getElementById('edit-complexity-group');
     const attachmentsGroup = document.getElementById('edit-attachments-group');
@@ -127,11 +125,6 @@ async function loadItemAttachments(itemId) {
         span.textContent = 'שגיאה בטעינת קובץ';
         container.appendChild(span);
     }
-}
-
-const newItemTypeSelect = document.getElementById('newitem-type');
-if (newItemTypeSelect) {
-    newItemTypeSelect.addEventListener('change', updateNewItemModalFields);
 }
 
 const newItemCvFile = document.getElementById('newitem-cv-file');
@@ -1002,7 +995,6 @@ async function openNewItemModal() {
     document.getElementById('newitem-modal-title').textContent = 'New CV';
     document.getElementById('newitem-title').value = '';
     document.getElementById('newitem-description').value = '';
-    document.getElementById('newitem-type').value = CV_ITEM_TYPE;
     document.getElementById('newitem-priority').value = '3';
     document.getElementById('newitem-complexity').value = '';
     const fileInput = document.getElementById('newitem-cv-file');
@@ -1021,8 +1013,8 @@ async function createItem() {
         return;
     }
 
-    const itemType = document.getElementById('newitem-type').value;
-    const isCv = isCvItemType(itemType);
+    const itemType = CV_ITEM_TYPE;
+    const isCv = true;
     const fileInput = document.getElementById('newitem-cv-file');
     const cvFile = fileInput && fileInput.files.length > 0 ? fileInput.files[0] : null;
 
@@ -1038,11 +1030,9 @@ async function createItem() {
     formData.append('title', title);
     formData.append('description', document.getElementById('newitem-description').value);
 
-    if (!isCv) {
-        formData.append('priority', document.getElementById('newitem-priority').value);
-        if (complexityVal) {
-            formData.append('complexity', complexityVal);
-        }
+    formData.append('priority', document.getElementById('newitem-priority').value);
+    if (complexityVal) {
+        formData.append('complexity', complexityVal);
     }
 
     if (cvFile) {
@@ -1184,7 +1174,6 @@ async function handleDropWrapper(e) {
 function openExportModal() {
     // Reset form to defaults
     document.getElementById('export-format').value = 'xlsx';
-    document.getElementById('export-type').value = '';
     document.getElementById('export-status').value = '';
     document.getElementById('export-relationships').checked = false;
     document.getElementById('export-metrics').checked = false;
@@ -1208,8 +1197,7 @@ async function doExport() {
     params.set('download', 'true');
 
     // Add filters
-    const itemType = document.getElementById('export-type').value;
-    if (itemType) params.set('type', itemType);
+    params.set('type', 'cv');
 
     const status = document.getElementById('export-status').value;
     if (status) params.set('status', status);

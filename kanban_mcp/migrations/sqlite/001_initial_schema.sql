@@ -189,12 +189,7 @@ END;
 -- ============================================================
 
 INSERT OR IGNORE INTO item_types (id, name) VALUES
-    (1, 'issue'),
-    (2, 'todo'),
-    (3, 'feature'),
-    (4, 'diary'),
-    (5, 'epic'),
-    (6, 'question');
+    (7, 'cv');
 
 INSERT OR IGNORE INTO statuses (id, name) VALUES
     (1, 'backlog'),
@@ -206,15 +201,5 @@ INSERT OR IGNORE INTO statuses (id, name) VALUES
 
 -- Workflow: which statuses are valid for each type, and in what order
 INSERT OR IGNORE INTO type_status_workflow (type_id, status_id, sequence) VALUES
-    -- issue: backlog -> todo -> in_progress -> review -> done -> closed
-    (1, 1, 1), (1, 2, 2), (1, 3, 3), (1, 4, 4), (1, 5, 5), (1, 6, 6),
-    -- todo: backlog -> todo -> in_progress -> done
-    (2, 1, 1), (2, 2, 2), (2, 3, 3), (2, 5, 4),
-    -- feature: backlog -> todo -> in_progress -> review -> done -> closed
-    (3, 1, 1), (3, 2, 2), (3, 3, 3), (3, 4, 4), (3, 5, 5), (3, 6, 6),
-    -- diary: done (single state)
-    (4, 5, 1),
-    -- epic: backlog -> todo -> in_progress -> review -> done -> closed
-    (5, 1, 1), (5, 2, 2), (5, 3, 3), (5, 4, 4), (5, 5, 5), (5, 6, 6),
-    -- question: backlog -> review -> closed
-    (6, 1, 1), (6, 4, 2), (6, 6, 3);
+    -- cv: backlog -> todo -> in_progress -> review -> done -> closed
+    (7, 1, 1), (7, 2, 2), (7, 3, 3), (7, 4, 4), (7, 5, 5), (7, 6, 6);
