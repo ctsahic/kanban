@@ -286,7 +286,7 @@ def api_export():
 
     Query params:
         project: Project ID (required)
-        format: Output format - json, yaml, markdown (default: json)
+        format: Output format - json, yaml, markdown, xlsx (default: json)
         type: Filter by item type
         status: Filter by status
         ids: Comma-separated item IDs
@@ -305,10 +305,10 @@ def api_export():
 
     # Get format
     format_type = request.args.get('format', 'json').lower()
-    if format_type not in ('json', 'yaml', 'markdown', 'md'):
+    if format_type not in ('json', 'yaml', 'markdown', 'md', 'xlsx'):
         return jsonify({
             'error': 'Invalid format.'
-            ' Use json, yaml, or markdown'
+            ' Use json, yaml, markdown, or xlsx'
         }), 400
 
     # Parse filter parameters

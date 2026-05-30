@@ -2,12 +2,21 @@
 """
 Kanban Export Module
 Provides multi-format export functionality
-(JSON, YAML, Markdown) for kanban data.
+(JSON, YAML, Markdown, XLSX) for kanban data.
 """
 
+from io import BytesIO
 import json
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+
+# XLSX is optional - gracefully handle missing import
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    XLSX_AVAILABLE = True
+except ImportError:
+    XLSX_AVAILABLE = False
 
 # YAML is optional - gracefully handle missing import
 try:
@@ -599,12 +608,12 @@ def export_to_format(
     data: Dict[str, Any],
     format: str = "json",
     detailed: bool = False
-) -> str:
+) -> str | bytes:
     """Export data to specified format.
 
     Args:
         data: Export data dictionary from ExportBuilder
-        format: Output format ('json', 'yaml', 'markdown')
+        format: Output format ('json', 'yaml', 'markdown', 'xlsx')
         detailed: For markdown, include detailed item info
 
     Returns:
@@ -622,11 +631,119 @@ def export_to_format(
         return format_yaml(data)
     elif format in ("markdown", "md"):
         return format_markdown(data, detailed=detailed)
+    elif format == "xlsx":
+        return format_xlsx(data)
     else:
         raise ValueError(
             f"Unsupported format: {format}. "
-            "Use 'json', 'yaml', or 'markdown'"
+            "Use 'json', 'yaml', 'markdown', or 'xlsx'"
         )
+
+
+def format_xlsx(data: Dict[str, Any]) -> bytes:
+    """Format export data as an Excel workbook.
+
+    Returns:
+        XLSX binary content
+
+    Raises:
+        ImportError: If openpyxl is not installed
+    """
+    if not XLSX_AVAILABLE:
+        raise ImportError(
+            "Excel export requires openpyxl. Install with: pip install openpyxl"
+        )
+
+    metadata = data.get("metadata", {})
+    items = data.get("items", [])
+    summary = data.get("summary", {})
+    updates = data.get("updates", [])
+
+    workbook = Workbook()
+    status_sheet = workbook.active
+    status_sheet.title = "Status Report"
+
+    header_fill = PatternFill("solid", fgColor="1F2937")
+    header_font = Font(color="FFFFFF", bold=True)
+    section_fill = PatternFill("solid", fgColor="E5E7EB")
+
+    project_name = metadata.get("project_name", "Kanban Export")
+    status_sheet["A1"] = f"Status Report - {project_name}"
+    status_sheet["A1"].font = Font(bold=True, size=14)
+    status_sheet.merge_cells("A1:H1")
+
+    status_sheet["A2"] = "Exported At"
+    status_sheet["B2"] = metadata.get("exported_at", "")
+    status_sheet["A3"] = "Total Items"
+    status_sheet["B3"] = summary.get("total_items", 0)
+    status_sheet["A4"] = "By Status"
+    status_sheet["A4"].fill = section_fill
+
+    by_status = summary.get("by_status", {})
+    row = 5
+    for status_name in sorted(by_status.keys()):
+        status_sheet[f"A{row}"] = status_name
+        status_sheet[f"B{row}"] = by_status[status_name]
+        row += 1
+
+    row += 1
+    columns = [
+        ("ID", 10),
+        ("Title", 32),
+        ("Type", 16),
+        ("Status", 18),
+        ("Priority", 10),
+        ("Complexity", 12),
+        ("Created At", 22),
+        ("Closed At", 22),
+    ]
+    start_row = row + 1
+    for col_idx, (title, width) in enumerate(columns, start=1):
+        cell = status_sheet.cell(row=start_row, column=col_idx, value=title)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        status_sheet.column_dimensions[cell.column_letter].width = width
+
+    current_row = start_row + 1
+    for item in items:
+        values = [
+            item.get("id"),
+            item.get("title"),
+            item.get("type_name"),
+            item.get("status_name"),
+            item.get("priority"),
+            item.get("complexity"),
+            item.get("created_at"),
+            item.get("closed_at"),
+        ]
+        for col_idx, value in enumerate(values, start=1):
+            status_sheet.cell(row=current_row, column=col_idx, value=value)
+        current_row += 1
+
+    if updates:
+        updates_sheet = workbook.create_sheet("Updates")
+        update_columns = [
+            ("ID", 10),
+            ("Content", 70),
+            ("Created At", 22),
+            ("Item IDs", 20),
+        ]
+        for col_idx, (title, width) in enumerate(update_columns, start=1):
+            cell = updates_sheet.cell(row=1, column=col_idx, value=title)
+            cell.fill = header_fill
+            cell.font = header_font
+            updates_sheet.column_dimensions[cell.column_letter].width = width
+
+        for row_idx, update in enumerate(updates, start=2):
+            updates_sheet.cell(row=row_idx, column=1, value=update.get("id"))
+            updates_sheet.cell(row=row_idx, column=2, value=update.get("content"))
+            updates_sheet.cell(row=row_idx, column=3, value=update.get("created_at"))
+            updates_sheet.cell(row=row_idx, column=4, value=", ".join(map(str, update.get("item_ids", []))))
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
 
 
 def get_mime_type(format: str) -> str:
@@ -643,7 +760,8 @@ def get_mime_type(format: str) -> str:
         "json": "application/json",
         "yaml": "text/yaml",
         "markdown": "text/markdown",
-        "md": "text/markdown"
+        "md": "text/markdown",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     }
     return mime_types.get(format, "text/plain")
 
@@ -662,6 +780,7 @@ def get_file_extension(format: str) -> str:
         "json": ".json",
         "yaml": ".yaml",
         "markdown": ".md",
-        "md": ".md"
+        "md": ".md",
+        "xlsx": ".xlsx"
     }
     return extensions.get(format, ".txt")

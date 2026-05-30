@@ -1183,7 +1183,7 @@ async function handleDropWrapper(e) {
 // --- Export Functions ---
 function openExportModal() {
     // Reset form to defaults
-    document.getElementById('export-format').value = 'json';
+    document.getElementById('export-format').value = 'xlsx';
     document.getElementById('export-type').value = '';
     document.getElementById('export-status').value = '';
     document.getElementById('export-relationships').checked = false;
