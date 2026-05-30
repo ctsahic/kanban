@@ -132,6 +132,11 @@ if (newItemCvFile) {
     newItemCvFile.addEventListener('change', updateNewItemFileLabel);
 }
 
+const importProjectArchiveInput = document.getElementById('import-project-archive');
+if (importProjectArchiveInput) {
+    importProjectArchiveInput.addEventListener('change', updateImportProjectFileLabel);
+}
+
 // Update filter bar visibility based on active filters
 function updateFilterBarVisibility() {
     const clearBtn = document.getElementById('clear-all-filters-btn');
@@ -1181,6 +1186,67 @@ function openExportModal() {
         });
     }
     openModal('export-modal');
+}
+
+function downloadProjectArchive() {
+    if (!PROJECT_ID) {
+        showToast('לא נבחר פרויקט', 'error');
+        return;
+    }
+
+    const link = document.createElement('a');
+    link.href = `/api/projects/${PROJECT_ID}/archive`;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function updateImportProjectFileLabel() {
+    const fileInput = document.getElementById('import-project-archive');
+    const fileLabel = document.getElementById('import-project-archive-name');
+    if (!fileInput || !fileLabel) return;
+    fileLabel.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : '';
+}
+
+function openImportProjectModal() {
+    const fileInput = document.getElementById('import-project-archive');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    updateImportProjectFileLabel();
+    openModal('import-project-modal');
+}
+
+async function importProjectArchive() {
+    const fileInput = document.getElementById('import-project-archive');
+    if (!fileInput || fileInput.files.length === 0) {
+        showToast('יש לבחור קובץ ארכיון', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('archive', fileInput.files[0]);
+
+    try {
+        const res = await fetch('/api/projects/import', {
+            method: 'POST',
+            body: formData,
+        });
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+            throw new Error(result.error || 'ייבוא הפרויקט נכשל');
+        }
+
+        closeModal('import-project-modal');
+        showToast('הפרויקט יובא בהצלחה');
+        setTimeout(() => {
+            window.location.href = '/?project=' + result.project_id;
+        }, 500);
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 async function doExport() {

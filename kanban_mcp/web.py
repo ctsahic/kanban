@@ -18,6 +18,10 @@ from kanban_mcp.export import (
     get_mime_type,
     get_file_extension,
 )
+from kanban_mcp.project_archive import (
+    export_project_archive,
+    import_project_archive,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'kanban-mcp-secret-key')
@@ -377,6 +381,45 @@ def api_export():
         return response
 
     except ImportError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/archive', methods=['GET'])
+def api_export_project_archive(project_id):
+    """Export a complete project archive including attachments."""
+    try:
+        archive_bytes = export_project_archive(db, project_id)
+        project = db.get_project_by_id(project_id)
+        project_name = project['name'] if project else 'project'
+        safe_name = ''.join(
+            c for c in project_name
+            if c.isascii() and (c.isalnum() or c in '-_')
+        )[:50] or 'project'
+        return send_file(
+            BytesIO(archive_bytes),
+            as_attachment=True,
+            download_name=f'{safe_name}.zip',
+            mimetype='application/zip',
+        )
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/import', methods=['POST'])
+def api_import_project_archive():
+    """Import a complete project archive including attachments."""
+    archive_file = request.files.get('archive')
+    if not archive_file:
+        return jsonify({'error': 'archive file required'}), 400
+
+    try:
+        result = import_project_archive(db, archive_file.read())
+        return jsonify(result), 201
+    except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500

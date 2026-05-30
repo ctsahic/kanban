@@ -26,6 +26,14 @@
                 <i class="material-icons">download</i>
             </button>
         </div>
+        <div id="app-archive-actions" class="app-bar-actions">
+            <button class="app-bar-action-btn" onclick="downloadProjectArchive()" title="ייצוא פרויקט מלא">
+                <i class="material-icons">archive</i>
+            </button>
+            <button class="app-bar-action-btn" onclick="openImportProjectModal()" title="ייבוא פרויקט">
+                <i class="material-icons">upload_file</i>
+            </button>
+        </div>
         <div class="app-bar-controls">
             <div class="project-select-wrapper">
                 <select class="project-select" onchange="handleProjectSelectChange(this.value)">
@@ -549,6 +557,33 @@
                     <i class="material-icons" style="font-size: 18px; margin-right: 4px;">download</i>
                     ייצא
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Project Modal -->
+    <div class="modal-overlay" id="import-project-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">ייבוא פרויקט</span>
+                <button class="close-btn" onclick="closeModal('import-project-modal')">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">קובץ ארכיון</label>
+                    <input type="file" class="form-input" id="import-project-archive" accept=".zip" />
+                    <small id="import-project-archive-name" style="color: var(--text-disabled); font-size: 11px; display: block; margin-top: 6px;"></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">הערה</label>
+                    <input type="text" class="form-input" value="ייבוא ייצור פרויקט חדש עם כל הנתונים והקבצים" disabled>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('import-project-modal')">ביטול</button>
+                <button class="btn btn-primary" onclick="importProjectArchive()">ייבא</button>
             </div>
         </div>
     </div>
