@@ -747,9 +747,8 @@ def format_xlsx(data: Dict[str, Any]) -> bytes:
         ("ID", 10),
         ("Title", 30),
         ("Status", 18),
-        ("Priority", 10),
         ("Created At", 22),
-        ("Closed At", 22),
+        ("Age (Days)", 12),
         ("Decision History", 60),
     ]
     for col_idx, (title, width) in enumerate(detail_columns, start=1):
@@ -764,14 +763,13 @@ def format_xlsx(data: Dict[str, Any]) -> bytes:
             item.get("id"),
             item.get("title"),
             item.get("status_name"),
-            item.get("priority"),
             item.get("created_at"),
-            item.get("closed_at"),
+            _format_item_age_days(item.get("created_at")),
             _format_decision_history(item.get("decisions", [])),
         ]
         for col_idx, value in enumerate(row_values, start=1):
             cell = detail_sheet.cell(row=row_idx, column=col_idx, value=value)
-            if col_idx == 7:
+            if col_idx == len(row_values):
                 cell.alignment = wrap_top
 
     if updates:
@@ -844,6 +842,24 @@ def _format_status_card(item: Dict[str, Any]) -> str:
         parts.append("היסטוריית החלטות:")
         parts.append(decisions)
     return "\n".join(parts)
+
+
+def _format_item_age_days(created_at: Any) -> Optional[int]:
+    """Return rounded age in days from created_at until now."""
+    if not created_at:
+        return None
+
+    if isinstance(created_at, str):
+        try:
+            created_at = datetime.fromisoformat(created_at)
+        except (ValueError, TypeError):
+            return None
+
+    if not isinstance(created_at, datetime):
+        return None
+
+    age_days = round((datetime.now() - created_at).total_seconds() / 86400)
+    return max(0, int(age_days))
 
 
 def get_mime_type(format: str) -> str:

@@ -369,8 +369,10 @@ class TestFormatters:
         assert 'סיכום' in workbook.sheetnames
         assert 'סטטוסים' in workbook.sheetnames
         assert 'פירוט' in workbook.sheetnames
-        assert workbook['פירוט']['G2'].value is not None
-        assert 'עבר סינון' in workbook['פירוט']['G2'].value
+        assert isinstance(workbook['פירוט']['E2'].value, int)
+        assert workbook['פירוט']['E2'].value > 0
+        assert workbook['פירוט']['F2'].value is not None
+        assert 'עבר סינון' in workbook['פירוט']['F2'].value
 
     def test_format_markdown_with_updates(self):
         """Test Markdown format with updates."""
