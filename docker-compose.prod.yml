@@ -16,7 +16,7 @@ services:
       retries: 10
 
   web:
-    image: ${KANBAN_WEB_IMAGE:-kanban-mcp-web:latest}
+    image: ${KANBAN_WEB_IMAGE:-kanban-mcp-web:entrypoint-fix}
     ports:
       - "5000:5000"
     environment:
